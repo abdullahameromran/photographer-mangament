@@ -23,6 +23,7 @@ const saveSession = (value: StoredSession | null) => {
   else localStorage.removeItem(sessionKey);
   window.dispatchEvent(new Event('studio-auth-change'));
 };
+let refreshInFlight: Promise<boolean> | null = null;
 
 const authHeaders = () => ({
   apikey: anonKey || '',
@@ -59,6 +60,27 @@ export const authApi = {
     if (data.access_token) saveSession(data);
     return { needsConfirmation: !data.access_token };
   },
+  async refreshSession(): Promise<boolean> {
+    if (refreshInFlight) return refreshInFlight;
+    const refreshToken = readSession()?.refresh_token;
+    if (!isSupabaseConfigured || !refreshToken) { saveSession(null); return false; }
+    refreshInFlight = (async () => {
+      try {
+        const response = await fetch(`${url}/auth/v1/token?grant_type=refresh_token`, {
+          method: 'POST',
+          headers: { apikey: anonKey || '', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+        const data = await parseResponse(response);
+        saveSession(data);
+        return true;
+      } catch {
+        saveSession(null);
+        return false;
+      } finally { refreshInFlight = null; }
+    })();
+    return refreshInFlight;
+  },
   signOut() { saveSession(null); },
 };
 
@@ -79,7 +101,10 @@ const toBooking = (row: any): Booking => {
 const bookingRow = (b: Partial<Booking>) => ({ customer_name:b.customerName, customer_phone:b.phone, customer_whatsapp:b.whatsapp, title:b.title, booking_types:b.bookingTypes?.map(t => typeToDb[t]), booking_date:b.date, start_time:b.startTime || null, end_time:b.endTime || null, location:b.location, location_url:b.mapUrl || null, notes:b.notes, price:b.price, deposit_paid:b.hasDeposit, deposit_amount:b.depositAmount, ...(b.status ? {status:statusToDb[b.status]} : {}) });
 
 async function rest(path: string, init: RequestInit = {}) {
-  return parseResponse(await fetch(`${url}/rest/v1/${path}`, { ...init, headers: { ...authHeaders(), Prefer: 'return=representation', ...(init.headers || {}) } }));
+  const request = () => fetch(`${url}/rest/v1/${path}`, { ...init, headers: { ...authHeaders(), Prefer: 'return=representation', ...(init.headers || {}) } });
+  let response = await request();
+  if (response.status === 401 && await authApi.refreshSession()) response = await request();
+  return parseResponse(response);
 }
 
 export const bookingsApi = {
@@ -108,4 +133,14 @@ export const usersApi = {
   async list(){if(!isSupabaseConfigured)return [];const rows=await rest('profiles?select=*,user_permissions(*),user_field_permissions(*),user_selected_bookings(booking_id)&order=created_at.asc');return rows.map(toUser) as User[];},
   async update(user:User){await rest(`profiles?id=eq.${user.id}`,{method:'PATCH',body:JSON.stringify({full_name:user.name,job_title:user.role==='Admin'?'Owner':user.role,is_admin:Boolean(user.isSystemAdmin),status:user.status==='Disabled'?'disabled':'active'})});await rest(`user_permissions?user_id=eq.${user.id}`,{method:'PATCH',body:JSON.stringify({can_view_bookings:user.permissions.actions.viewBooking,can_create_booking:user.permissions.actions.createBooking,can_edit_booking:user.permissions.actions.editBooking,can_delete_booking:user.permissions.actions.deleteBooking,can_change_status:user.permissions.actions.changeStatus,can_add_notes:user.permissions.actions.addNotes,booking_scope:user.permissions.bookingScope==='assigned'?'assigned_only':user.permissions.bookingScope})});const unique=new Map<string,{user_id:string,field_name:string,can_view:boolean,can_edit:boolean}>();for(const [key,db] of Object.entries(fieldMap)){if(!db)continue;const value=user.permissions.fields[key as FieldKey];const old=unique.get(db);unique.set(db,{user_id:user.id,field_name:db,can_view:Boolean(old?.can_view||value?.view),can_edit:Boolean(old?.can_edit||value?.edit)});}await rest(`user_field_permissions?user_id=eq.${user.id}`,{method:'DELETE'});await rest('user_field_permissions',{method:'POST',body:JSON.stringify([...unique.values()])});await rest(`user_selected_bookings?user_id=eq.${user.id}`,{method:'DELETE'});if(user.permissions.bookingScope==='selected'&&user.permissions.selectedBookingIds.length)await rest('user_selected_bookings',{method:'POST',body:JSON.stringify(user.permissions.selectedBookingIds.map(booking_id=>({user_id:user.id,booking_id})))});},
   async removeProfile(id:string){await rest(`profiles?id=eq.${id}`,{method:'DELETE'});}
+};
+
+export interface Subscriber { user_id:string;plan_code:'monthly'|'quarterly'|'yearly';starts_at:string;expires_at:string;enabled:boolean;notes?:string;profiles?:{full_name:string;job_title?:string;phone?:string}|Array<{full_name:string;job_title?:string;phone?:string}> }
+export const subscriptionApi = {
+  async isSuperAdmin(){if(!isSupabaseConfigured)return false;const rows=await rest(`super_admins?user_id=eq.${authApi.currentUser()?.id}&select=user_id`);return rows.length>0;},
+  async current(){if(!isSupabaseConfigured)return null;const id=authApi.currentUser()?.id;if(!id)return null;const rows=await rest(`subscriptions?user_id=eq.${id}&select=*`);return (rows[0]||null) as Subscriber|null;},
+  async list(){return await rest('subscriptions?select=*,profiles(full_name,job_title,phone)&order=created_at.desc') as Subscriber[];},
+  async create(input:{name:string;email:string;password:string;phone:string;plan:string}){const response=await fetch(`${url}/functions/v1/create-subscriber`,{method:'POST',headers:authHeaders(),body:JSON.stringify(input)});return parseResponse(response);},
+  async update(userId:string,data:Partial<Pick<Subscriber,'plan_code'|'expires_at'|'enabled'|'notes'>>){await rest(`subscriptions?user_id=eq.${userId}`,{method:'PATCH',body:JSON.stringify(data)});},
+  async extend(userId:string,plan:'monthly'|'quarterly'|'yearly'){const current=(await this.list()).find(x=>x.user_id===userId);const base=current&&new Date(current.expires_at)>new Date()?new Date(current.expires_at):new Date();base.setMonth(base.getMonth()+(plan==='yearly'?12:plan==='quarterly'?3:1));await this.update(userId,{plan_code:plan,expires_at:base.toISOString(),enabled:true});}
 };

@@ -9,6 +9,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const refresh = () => { setUser(authApi.currentUser()); setLoading(false); };
   useEffect(() => { refresh(); window.addEventListener('studio-auth-change', refresh); return () => window.removeEventListener('studio-auth-change', refresh); }, []);
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured) return;
+    const timer = window.setInterval(() => { authApi.refreshSession(); }, 45 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, [user]);
   return <AuthContext.Provider value={{ user, loading, configured:isSupabaseConfigured, refresh, signOut:authApi.signOut }}>{children}</AuthContext.Provider>;
 }
 

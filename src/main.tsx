@@ -1,18 +1,31 @@
-import {StrictMode, useState} from 'react';
+import {StrictMode, useEffect, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { AuthProvider, useAuth } from './contexts/AuthContext.tsx';
 import { AuthPage } from './components/AuthPage.tsx';
 import { LandingPage } from './components/LandingPage.tsx';
+import { SuperAdminPage, SubscriptionExpired } from './components/SuperAdminPage.tsx';
+import { subscriptionApi, type Subscriber } from './lib/supabase.ts';
 
 function Root() {
   const { user, loading } = useAuth();
-  const [showAuth, setShowAuth] = useState(() => new URLSearchParams(window.location.search).has('auth'));
+  const [path, setPath] = useState(window.location.pathname);
+  const [subscription, setSubscription] = useState<Subscriber | null | undefined>(undefined);
+  useEffect(() => { const update = () => setPath(window.location.pathname); window.addEventListener('popstate',update); return () => window.removeEventListener('popstate',update); },[]);
+  const navigate = (next:string) => { window.history.pushState({},'',next); setPath(next); window.scrollTo({top:0,behavior:'smooth'}); };
+  useEffect(() => { if (user && path === '/login') { window.history.replaceState({},'', '/app'); setPath('/app'); } },[user,path]);
+  useEffect(() => { if (!user || path !== '/app') { setSubscription(undefined); return; } subscriptionApi.current().then(setSubscription).catch(()=>setSubscription(null)); },[user,path]);
   if (loading) return <div className="min-h-screen grid place-items-center bg-slate-950 text-white">جاري تجهيز الاستوديو…</div>;
-  if (user) return <App />;
-  if (showAuth) return <AuthPage />;
-  return <LandingPage onLogin={() => { window.history.pushState({},'', '?auth=1'); setShowAuth(true); }} />;
+  if (path === '/super_admin') return user ? <SuperAdminPage /> : <AuthPage />;
+  if (path === '/app') {
+    if (!user) return <AuthPage />;
+    if (subscription === undefined) return <div className="min-h-screen grid place-items-center bg-slate-950 text-white">جاري التحقق من الاشتراك…</div>;
+    if (!subscription?.enabled || new Date(subscription.expires_at) <= new Date()) return <SubscriptionExpired />;
+    return <App />;
+  }
+  if (path === '/login') return user ? <App /> : <AuthPage />;
+  return <LandingPage onLogin={() => navigate(user ? '/app' : '/login')} />;
 }
 
 createRoot(document.getElementById('root')!).render(
