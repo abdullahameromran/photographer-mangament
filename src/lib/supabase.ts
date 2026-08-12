@@ -508,6 +508,17 @@ export const usersApi = {
     );
     return rows.map(toUser) as User[];
   },
+  async createCollaborator(user: User, password: string) {
+    const response = await fetch(`${url}/functions/v1/create-collaborator`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ name: user.name, email: user.email, password, role: user.role }),
+    });
+    const result = await parseResponse(response);
+    const createdUser = { ...user, id: result.user_id };
+    await this.update(createdUser);
+    return createdUser;
+  },
   async update(user: User) {
     await rest(`profiles?id=eq.${user.id}`, {
       method: "PATCH",

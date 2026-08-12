@@ -41,7 +41,7 @@ const ASSISTANT_FIELD_PERMISSIONS = Object.fromEntries(
 interface UsersManagementProps {
   users: User[];
   allBookings: Booking[];
-  onSaveUser: (user: User) => void;
+  onSaveUser: (user: User, password?: string) => void | Promise<void>;
   onDeleteUser: (userId: string) => void;
 }
 
@@ -57,6 +57,9 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
   // Form State for User Edit/Create
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [formError, setFormError] = useState('');
   const [role, setRole] = useState<UserRole>('مساعد');
   const [status, setStatus] = useState<UserStatus>('Active');
   const [avatar, setAvatar] = useState('');
@@ -82,6 +85,9 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
     setSelectedUserForEdit(null);
     setName('');
     setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setFormError('');
     setRole('مساعد');
     setStatus('Active');
     setAvatar(
@@ -105,6 +111,9 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
     setSelectedUserForEdit(u);
     setName(u.name);
     setEmail(u.email);
+    setPassword('');
+    setConfirmPassword('');
+    setFormError('');
     setRole(u.role);
     setStatus(u.status);
     setAvatar(u.avatar);
@@ -157,8 +166,16 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
     setFields(updated);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedUserForEdit && password.length < 8) {
+      setFormError('كلمة المرور يجب أن تكون 8 أحرف على الأقل.');
+      return;
+    }
+    if (!selectedUserForEdit && password !== confirmPassword) {
+      setFormError('كلمتا المرور غير متطابقتين.');
+      return;
+    }
     const newUser: User = {
       id: selectedUserForEdit ? selectedUserForEdit.id : `user_${Date.now()}`,
       name,
@@ -174,8 +191,13 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
         fields,
       },
     };
-    onSaveUser(newUser);
-    setIsModalOpen(false);
+    try {
+      setFormError('');
+      await onSaveUser(newUser, selectedUserForEdit ? undefined : password);
+      setIsModalOpen(false);
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'تعذر إنشاء حساب العضو.');
+    }
   };
 
   const toggleSelectedBooking = (bId: string) => {
@@ -412,6 +434,7 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                   1. البيانات الأساسية للمستخدم:
                 </h3>
 
+                {formError && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-700">{formError}</div>}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -426,6 +449,19 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                       className="w-full text-sm bg-white p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500"
                     />
                   </div>
+
+                  {!selectedUserForEdit && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">كلمة المرور <span className="text-red-500">*</span></label>
+                        <input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="8 أحرف على الأقل" autoComplete="new-password" className="w-full text-sm bg-white p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 dir-ltr text-right" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">تأكيد كلمة المرور <span className="text-red-500">*</span></label>
+                        <input type="password" required minLength={8} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="أعد كتابة كلمة المرور" autoComplete="new-password" className="w-full text-sm bg-white p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 dir-ltr text-right" />
+                      </div>
+                    </>
+                  )}
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">

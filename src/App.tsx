@@ -204,14 +204,17 @@ export default function App() {
   };
 
   // User management handlers
-  const handleSaveUser = async (updatedUser: User) => {
+  const handleSaveUser = async (updatedUser: User, password?: string) => {
     const exists = users.some((u) => u.id === updatedUser.id);
     if (exists) {
       setUsers(users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
       try { await usersApi.update(updatedUser); showToast(`⚙️ تم تحديث صلاحيات وحقول المستخدم "${updatedUser.name}"`); }
       catch(error) { setUsers(await usersApi.list().catch(()=>users)); showToast(`تعذر تحديث المستخدم: ${error instanceof Error?error.message:'خطأ غير متوقع'}`); }
     } else {
-      showToast('أنشئ حساب العضو من صفحة التسجيل أولاً، ثم عدّل صلاحياته هنا.');
+      if (!password) throw new Error('أدخل كلمة مرور للعضو.');
+      const createdUser = await usersApi.createCollaborator(updatedUser, password);
+      setUsers((current) => [...current, createdUser]);
+      showToast(`✅ تم إنشاء حساب العضو "${createdUser.name}" ويمكنه تسجيل الدخول الآن`);
     }
   };
 
