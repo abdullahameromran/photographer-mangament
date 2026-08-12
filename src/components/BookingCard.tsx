@@ -7,6 +7,7 @@ import {
   calculateFinancials,
   formatCurrency,
   formatDateArabic,
+  formatTimeArabic,
 } from '../utils/permissions';
 import {
   Calendar,
@@ -193,7 +194,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
             <div className="flex items-center gap-2 text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
               <Clock className="w-4 h-4 text-blue-600 shrink-0" />
               <span>
-                {booking.startTime} - {booking.endTime}
+                {formatTimeArabic(booking.startTime)} - {formatTimeArabic(booking.endTime)}
               </span>
             </div>
           )}

@@ -18,7 +18,7 @@ import {
   CalendarDays,
   ExternalLink,
 } from 'lucide-react';
-import { getPhoneUrl, getWhatsAppUrl } from '../utils/permissions';
+import { formatTimeArabic, getPhoneUrl, getWhatsAppUrl } from '../utils/permissions';
 import { canViewField, canPerformAction } from '../utils/permissions';
 
 interface TodaySessionsViewProps {
@@ -300,7 +300,7 @@ export const TodaySessionsView: React.FC<TodaySessionsViewProps> = ({
                     <div className="bg-slate-900 text-amber-300 border border-slate-800 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 shrink-0">
                       <Clock className="w-3.5 h-3.5 text-amber-400" />
                       <span>
-                        {booking.startTime} - {booking.endTime}
+                        {formatTimeArabic(booking.startTime)} - {formatTimeArabic(booking.endTime)}
                       </span>
                     </div>
                   </div>

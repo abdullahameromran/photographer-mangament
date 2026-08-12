@@ -15,7 +15,7 @@ import {
   X,
   Search,
 } from 'lucide-react';
-import { canViewField, getPhoneUrl, getWhatsAppUrl } from '../utils/permissions';
+import { canViewField, formatTimeArabic, getPhoneUrl, getWhatsAppUrl } from '../utils/permissions';
 
 interface CalendarViewProps {
   bookings: Booking[];
@@ -347,9 +347,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             ? 'bg-slate-800 text-slate-100 border-slate-700'
                             : 'bg-blue-50 text-blue-800 border-blue-200'
                         }`}
-                        title={`${b.startTime} - ${b.title}`}
+                        title={`${formatTimeArabic(b.startTime)} - ${b.title}`}
                       >
-                        <span className="font-mono text-[9px] opacity-75">{b.startTime}</span> {b.title}
+                        <span className="text-[9px] opacity-75">{formatTimeArabic(b.startTime)}</span> {b.title}
                       </div>
                     ))}
 
@@ -420,7 +420,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         {b.title}
                       </h4>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-900 text-amber-300">
-                        {b.startTime}
+                        {formatTimeArabic(b.startTime)}
                       </span>
                     </div>
 

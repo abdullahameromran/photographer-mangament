@@ -111,3 +111,11 @@ export function getWhatsAppUrl(phone: string, message = ''): string {
 export function getPhoneUrl(phone: string): string {
   return `tel:${phone.replace(/[^\d+]/g, '')}`;
 }
+
+export function formatTimeArabic(time: string): string {
+  if (!time) return '';
+  const [hoursText, minutes = '00'] = time.split(':');
+  const hours = Number(hoursText);
+  if (!Number.isFinite(hours)) return time;
+  return `${hours % 12 || 12}:${minutes} ${hours < 12 ? 'صباحاً' : 'مساءً'}`;
+}

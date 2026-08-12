@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Bell, BellRing, BellOff } from 'lucide-react';
 import type { Booking, ReminderOption } from '../types';
+import { formatTimeArabic } from '../utils/permissions';
 
 const offsets: Partial<Record<ReminderOption, number>> = {
   'قبل ساعة': 60, 'قبل ساعتين': 120, 'قبل 3 ساعات': 180,
@@ -15,7 +16,7 @@ function getSent(): Record<string, number> {
 async function showBookingNotification(booking: Booking) {
   const registration = await navigator.serviceWorker?.ready;
   const options: NotificationOptions = {
-    body: `${booking.customerName} • ${booking.startTime} • ${booking.location || 'الموقع غير محدد'}`,
+    body: `${booking.customerName} • ${formatTimeArabic(booking.startTime)} • ${booking.location || 'الموقع غير محدد'}`,
     icon: '/favicon.svg', badge: '/favicon.svg', tag: `booking-${booking.id}`,
     data: { bookingId: booking.id }, requireInteraction: true,
   };
