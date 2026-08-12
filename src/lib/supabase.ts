@@ -81,6 +81,16 @@ export const authApi = {
     })();
     return refreshInFlight;
   },
+  async updatePassword(password: string) {
+    if (!isSupabaseConfigured) throw new Error('Supabase غير متصل');
+    const response = await fetch(`${url}/auth/v1/user`, {
+      method: 'PUT', headers: authHeaders(), body: JSON.stringify({ password }),
+    });
+    if (response.status === 401 && await this.refreshSession()) {
+      return parseResponse(await fetch(`${url}/auth/v1/user`, { method:'PUT', headers:authHeaders(), body:JSON.stringify({password}) }));
+    }
+    return parseResponse(response);
+  },
   signOut() { saveSession(null); },
 };
 

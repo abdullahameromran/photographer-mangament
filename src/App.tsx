@@ -16,6 +16,7 @@ import { StatsOverview } from './components/StatsOverview';
 import { KanbanBoard } from './components/KanbanBoard';
 import { TodaySessionsView } from './components/TodaySessionsView';
 import { CalendarView } from './components/CalendarView';
+import { AccountPage } from './components/AccountPage';
 import {
   LayoutGrid,
   Columns3,
@@ -57,7 +58,7 @@ export default function App() {
 
   // Navigation & View Mode
   const [activeTab, setActiveTab] = useState<
-    'bookings' | 'upcoming' | 'calendar' | 'printing' | 'users' | 'stats'
+    'bookings' | 'upcoming' | 'calendar' | 'printing' | 'users' | 'stats' | 'account'
   >('bookings');
   const [viewMode, setViewMode] = useState<'cards' | 'kanban' | 'table'>('cards');
 
@@ -502,6 +503,7 @@ export default function App() {
         {activeTab === 'stats' && (
           <StatsOverview bookings={accessibleBookings} currentUser={currentUser} />
         )}
+        {activeTab === 'account' && <AccountPage currentUser={currentUser} />}
       </main>
       </div>
 

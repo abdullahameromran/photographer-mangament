@@ -27,8 +27,8 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: User;
-  activeTab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'users' | 'stats';
-  onTabChange: (tab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'users' | 'stats') => void;
+  activeTab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'users' | 'stats' | 'account';
+  onTabChange: (tab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'users' | 'stats' | 'account') => void;
   onOpenCreateModal: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -323,7 +323,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Sidebar Footer: Current User Status */}
-        <div className="p-4 border-t border-slate-800 shrink-0 bg-slate-950/60 flex items-center gap-3">
+        <button onClick={() => { onTabChange('account'); onClose(); }} className={`w-full text-right p-4 border-t border-slate-800 shrink-0 flex items-center gap-3 transition-colors ${activeTab==='account'?'bg-blue-600/20':'bg-slate-950/60 hover:bg-slate-800'}`}>
           <img
             src={currentUser.avatar}
             alt={currentUser.name}
@@ -338,7 +338,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span>{currentUser.role}</span>
             </div>
           </div>
-        </div>
+        </button>
       </aside>
     </>
   );

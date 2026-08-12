@@ -6,8 +6,12 @@ Deno.serve(async (req) => {
   try {
     const url=Deno.env.get('SUPABASE_URL')!; const serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const authHeader=req.headers.get('Authorization')||'';
-    const admin=createClient(url,serviceKey,{global:{headers:{Authorization:authHeader}}});
-    const token=authHeader.replace('Bearer ',''); const {data:{user}}=await admin.auth.getUser(token);
+    // Never override the service-role Authorization header with the caller JWT.
+    // The caller token is validated explicitly below.
+    const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
+    const token=authHeader.replace('Bearer ','');
+    const {data:{user},error:userError}=await admin.auth.getUser(token);
+    if(userError) throw userError;
     if(!user) throw new Error('Unauthorized');
     const {data:isAdmin}=await admin.rpc('is_super_admin',{p_user:user.id});
     if(!isAdmin) return new Response(JSON.stringify({error:'Forbidden'}),{status:403,headers:{...cors,'Content-Type':'application/json'}});

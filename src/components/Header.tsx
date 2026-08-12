@@ -21,8 +21,8 @@ import { NotificationReminders } from './NotificationReminders';
 
 interface HeaderProps {
   currentUser: User;
-  activeTab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'users' | 'stats';
-  onTabChange: (tab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'users' | 'stats') => void;
+  activeTab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'users' | 'stats' | 'account';
+  onTabChange: (tab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'users' | 'stats' | 'account') => void;
   onOpenCreateModal: () => void;
   onOpenSidebar: () => void;
   searchQuery: string;
@@ -107,7 +107,7 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
-            <div className="flex shrink-0 items-center gap-1 sm:gap-2.5 bg-slate-800/90 border border-slate-700/80 p-1 sm:p-1.5 sm:pl-2 rounded-lg overflow-hidden">
+            <div onClick={() => onTabChange('account')} role="button" tabIndex={0} title="حسابي" className="flex shrink-0 items-center gap-1 sm:gap-2.5 bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 p-1 sm:p-1.5 sm:pl-2 rounded-lg overflow-hidden cursor-pointer">
                 <img
                   src={currentUser.avatar}
                   alt={currentUser.name}
