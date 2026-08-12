@@ -1,7 +1,6 @@
 import React from 'react';
 import { User, Booking } from '../types';
 import {
-  Camera,
   Calendar,
   Printer,
   Users,
@@ -64,9 +63,6 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             <div className="flex min-w-0 items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-sm shrink-0">
-                <Camera className="w-5 h-5" />
-              </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h1 className="hidden sm:block text-lg sm:text-xl font-bold tracking-tight text-white font-tajawal">

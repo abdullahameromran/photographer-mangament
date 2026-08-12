@@ -68,6 +68,7 @@ export interface Booking {
   price: number;
   hasDeposit: boolean;
   depositAmount: number;
+  depositReceiptUrl?: string;
 
   // Printing
   hasPrint: boolean;

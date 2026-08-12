@@ -13,14 +13,10 @@ import { BookingModal } from './components/BookingModal';
 import { PrintManagement } from './components/PrintManagement';
 import { UsersManagement } from './components/UsersManagement';
 import { StatsOverview } from './components/StatsOverview';
-import { KanbanBoard } from './components/KanbanBoard';
 import { TodaySessionsView } from './components/TodaySessionsView';
 import { CalendarView } from './components/CalendarView';
 import { AccountPage } from './components/AccountPage';
 import {
-  LayoutGrid,
-  Columns3,
-  Table as TableIcon,
   Plus,
   Filter,
   Search,
@@ -60,7 +56,6 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<
     'bookings' | 'upcoming' | 'calendar' | 'printing' | 'users' | 'stats' | 'account'
   >('bookings');
-  const [viewMode, setViewMode] = useState<'cards' | 'kanban' | 'table'>('cards');
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -147,6 +142,7 @@ export default function App() {
         price: bookingData.price || 0,
         hasDeposit: bookingData.hasDeposit ?? false,
         depositAmount: bookingData.depositAmount || 0,
+        depositReceiptUrl: bookingData.depositReceiptUrl || '',
         hasPrint: bookingData.hasPrint ?? false,
         printOptions: bookingData.printOptions || {
           largeCanvas: false,
@@ -357,34 +353,6 @@ export default function App() {
                 </button>
               </div>
 
-              {/* View Switcher (Cards vs Kanban vs Table) */}
-              <div className="flex items-center gap-2 justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
-                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl">
-                  <button
-                    onClick={() => setViewMode('cards')}
-                    className={`p-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
-                      viewMode === 'cards'
-                        ? 'bg-white text-slate-900 shadow-sm'
-                        : 'text-slate-500 hover:text-slate-900'
-                    }`}
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                    <span>بطاقات</span>
-                  </button>
-
-                  <button
-                    onClick={() => setViewMode('kanban')}
-                    className={`p-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
-                      viewMode === 'kanban'
-                        ? 'bg-white text-slate-900 shadow-sm'
-                        : 'text-slate-500 hover:text-slate-900'
-                    }`}
-                  >
-                    <Columns3 className="w-4 h-4" />
-                    <span>كانبان (أعمدة)</span>
-                  </button>
-                </div>
-              </div>
             </div>
 
             {/* View Mode Content */}
@@ -405,7 +373,7 @@ export default function App() {
                   </button>
                 )}
               </div>
-            ) : viewMode === 'cards' ? (
+            ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredBookings.map((b) => (
                   <BookingCard
@@ -421,17 +389,6 @@ export default function App() {
                   />
                 ))}
               </div>
-            ) : (
-              <KanbanBoard
-                bookings={filteredBookings}
-                currentUser={currentUser}
-                allUsers={users}
-                onViewBooking={handleOpenViewModal}
-                onEditBooking={handleOpenEditModal}
-                onDeleteBooking={handleDeleteBooking}
-                onStatusChange={handleStatusChange}
-                onPrintStatusChange={handlePrintStatusChange}
-              />
             )}
           </div>
         )}

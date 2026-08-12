@@ -32,11 +32,12 @@ import {
   Sparkles,
   CheckCircle2,
 } from "lucide-react";
+import { storageApi } from "../lib/supabase";
 
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (bookingData: Partial<Booking>) => void;
+  onSave: (bookingData: Partial<Booking>) => void | Promise<void>;
   initialBooking?: Booking | null;
   mode: "create" | "edit" | "view";
   currentUser: User;
@@ -94,6 +95,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [price, setPrice] = useState<number>(8000);
   const [hasDeposit, setHasDeposit] = useState<boolean>(true);
   const [depositAmount, setDepositAmount] = useState<number>(3000);
+  const [depositReceiptUrl, setDepositReceiptUrl] = useState("");
+  const [depositReceiptFile, setDepositReceiptFile] = useState<File | null>(null);
+  const [depositReceiptPreview, setDepositReceiptPreview] = useState("");
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   // Printing
@@ -134,6 +139,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setPrice(initialBooking.price || 0);
       setHasDeposit(initialBooking.hasDeposit ?? false);
       setDepositAmount(initialBooking.depositAmount || 0);
+      setDepositReceiptUrl(initialBooking.depositReceiptUrl || "");
+      setDepositReceiptPreview(initialBooking.depositReceiptUrl || "");
+      setDepositReceiptFile(null);
 
       setHasPrint(initialBooking.hasPrint ?? false);
       setPrintOptions(
@@ -165,6 +173,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setPrice(8000);
       setHasDeposit(true);
       setDepositAmount(3000);
+      setDepositReceiptUrl("");
+      setDepositReceiptPreview("");
+      setDepositReceiptFile(null);
       setHasPrint(true);
       setPrintOptions({
         largeCanvas: true,
@@ -228,7 +239,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const canEditStaff =
     canEditField(currentUser, "assignedStaff") && !isViewOnly;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errors: string[] = [];
     const cleanName = customerName.trim();
@@ -272,7 +283,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       return;
     }
     setValidationErrors([]);
-    onSave({
+    let receiptUrl = depositReceiptUrl;
+    if (depositReceiptFile) {
+      try {
+        setIsUploadingReceipt(true);
+        receiptUrl = await storageApi.uploadDepositReceipt(depositReceiptFile);
+      } catch (error) {
+        setValidationErrors([error instanceof Error ? error.message : "تعذر رفع صورة العربون."]);
+        setIsUploadingReceipt(false);
+        return;
+      }
+    }
+    await onSave({
       title: `${bookingTypes.join(" + ")} - ${cleanName}`,
       customerName: cleanName,
       phone: cleanPhone,
@@ -288,6 +310,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       price,
       hasDeposit,
       depositAmount: hasDeposit ? depositAmount : 0,
+      depositReceiptUrl: hasDeposit ? receiptUrl : "",
       hasPrint,
       printOptions,
       printStatus,
@@ -296,6 +319,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       assignedUserIds,
       status,
     });
+    setIsUploadingReceipt(false);
     onClose();
   };
 
@@ -638,6 +662,52 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     />
                   </div>
                 )}
+
+                {canViewDeposit && hasDeposit && (
+                  <div className="sm:col-span-2 rounded-xl border border-slate-700 bg-slate-800/70 p-3 space-y-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-200 mb-1">
+                        صورة إثبات دفع العربون <span className="text-slate-500">(اختياري)</span>
+                      </label>
+                      <p className="text-[10px] text-slate-400">PNG أو JPG أو WEBP، بحد أقصى 5 ميجابايت.</p>
+                    </div>
+                    {depositReceiptPreview && (
+                      <a href={depositReceiptPreview} target="_blank" rel="noreferrer" className="block w-fit">
+                        <img src={depositReceiptPreview} alt="إثبات دفع العربون" className="h-32 max-w-full rounded-lg border border-slate-600 object-contain bg-slate-900" />
+                      </a>
+                    )}
+                    {!isViewOnly && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <label className="cursor-pointer rounded-lg bg-blue-600 hover:bg-blue-700 px-3 py-2 text-xs font-bold text-white transition-colors">
+                          {depositReceiptPreview ? "استبدال الصورة" : "رفع صورة"}
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) {
+                                setValidationErrors(["اختر صورة PNG أو JPG أو WEBP لا يزيد حجمها عن 5 ميجابايت."]);
+                                e.target.value = "";
+                                return;
+                              }
+                              setDepositReceiptFile(file);
+                              const reader = new FileReader();
+                              reader.onload = () => setDepositReceiptPreview(String(reader.result || ""));
+                              reader.readAsDataURL(file);
+                            }}
+                          />
+                        </label>
+                        {depositReceiptPreview && (
+                          <button type="button" onClick={() => { setDepositReceiptFile(null); setDepositReceiptUrl(""); setDepositReceiptPreview(""); }} className="rounded-lg bg-rose-500/10 border border-rose-500/30 px-3 py-2 text-xs font-bold text-rose-300">
+                            حذف الصورة
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Automatic Calculation Results Box */}
@@ -966,10 +1036,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               </button>
               <button
                 type="submit"
-                className="relative z-10 flex items-center gap-2 px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition-colors cursor-pointer"
+                disabled={isUploadingReceipt}
+                className="relative z-10 flex items-center gap-2 px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait"
               >
                 <Save className="w-4 h-4" />
-                <span>حفظ بيانات الحجز</span>
+                <span>{isUploadingReceipt ? "جاري رفع الصورة..." : "حفظ بيانات الحجز"}</span>
               </button>
             </div>
           )}

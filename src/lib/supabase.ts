@@ -250,6 +250,7 @@ const toBooking = (row: any): Booking => {
     price: Number(row.price || 0),
     hasDeposit: Boolean(row.deposit_paid),
     depositAmount: Number(row.deposit_amount || 0),
+    depositReceiptUrl: row.deposit_receipt_url || "",
     hasPrint: Boolean(printing?.has_printing),
     printOptions: {
       largeCanvas: Boolean(printing?.large_tableau),
@@ -286,8 +287,32 @@ const bookingRow = (b: Partial<Booking>) => ({
   price: b.price,
   deposit_paid: b.hasDeposit,
   deposit_amount: b.depositAmount,
+  deposit_receipt_url: b.depositReceiptUrl || null,
   ...(b.status ? { status: statusToDb[b.status] } : {}),
 });
+
+export const storageApi = {
+  async uploadDepositReceipt(file: File) {
+    if (!url || !isSupabaseConfigured) throw new Error("اتصال Supabase غير متاح");
+    const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const objectPath = `${readSession()?.user.id || "user"}/${crypto.randomUUID()}.${extension}`;
+    const response = await fetch(`${url}/storage/v1/object/deposit-receipts/${objectPath}`, {
+      method: "POST",
+      headers: {
+        apikey: anonKey || "",
+        Authorization: `Bearer ${readSession()?.access_token || anonKey || ""}`,
+        "Content-Type": file.type,
+        "x-upsert": "false",
+      },
+      body: file,
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || error.error || "تعذر رفع صورة العربون");
+    }
+    return `${url}/storage/v1/object/public/deposit-receipts/${objectPath}`;
+  },
+};
 
 async function rest(path: string, init: RequestInit = {}) {
   const request = () =>

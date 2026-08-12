@@ -70,9 +70,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-md shadow-blue-600/20">
               <Camera className="w-5 h-5" />
             </div>
-            <div>
-              <h2 className="text-base font-bold font-tajawal text-white tracking-tight">
-                ستوديو فوتو
+            <div className="min-w-0">
+              <h2 className="max-w-44 truncate text-base font-bold font-tajawal text-white tracking-tight" title={currentUser.name}>
+                {currentUser.name}
               </h2>
               <span className="text-[10px] bg-blue-500/20 text-blue-400 font-semibold px-2 py-0.5 rounded border border-blue-500/30">
                 نظام إدارة الحجوزات
