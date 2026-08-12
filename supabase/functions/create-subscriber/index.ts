@@ -20,8 +20,14 @@ Deno.serve(async (req) => {
     if(!/^01[0125]\d{8}$/.test(String(phone||''))) throw new Error('رقم الهاتف يجب أن يكون 11 رقماً مصرياً صحيحاً');
     const {data:created,error}=await admin.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{full_name:name}});
     if(error) throw error;
-    const {error:profileError}=await admin.from('profiles').update({phone}).eq('id',created.user.id);
+    const {data:studio,error:studioError}=await admin.from('studios').insert({name:`${name} Studio`,owner_id:created.user.id}).select('id').single();
+    if(studioError){await admin.auth.admin.deleteUser(created.user.id);throw studioError;}
+    const {error:profileError}=await admin.from('profiles').update({phone,studio_id:studio.id,is_admin:true,job_title:'Owner',status:'active'}).eq('id',created.user.id);
     if(profileError){await admin.auth.admin.deleteUser(created.user.id);throw profileError;}
+    const {error:permissionError}=await admin.from('user_permissions').update({can_view_bookings:true,can_create_booking:true,can_edit_booking:true,can_delete_booking:true,can_change_status:true,can_add_notes:true,booking_scope:'all'}).eq('user_id',created.user.id);
+    if(permissionError){await admin.auth.admin.deleteUser(created.user.id);throw permissionError;}
+    const {error:fieldError}=await admin.from('user_field_permissions').update({can_view:true,can_edit:true}).eq('user_id',created.user.id);
+    if(fieldError){await admin.auth.admin.deleteUser(created.user.id);throw fieldError;}
     const months=plan==='yearly'?12:plan==='quarterly'?3:1; const expires=new Date(); expires.setMonth(expires.getMonth()+months);
     const {error:subError}=await admin.from('subscriptions').insert({user_id:created.user.id,plan_code:plan,expires_at:expires.toISOString()});
     if(subError){await admin.auth.admin.deleteUser(created.user.id);throw subError;}

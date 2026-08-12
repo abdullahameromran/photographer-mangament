@@ -20,7 +20,7 @@ function Root() {
   if (path === '/super_admin') return user ? <SuperAdminPage /> : <AuthPage />;
   if (path === '/app') {
     if (!user) return <AuthPage />;
-    if (subscription === undefined) return <div className="min-h-screen grid place-items-center bg-slate-950 text-white">جاري التحقق من الاشتراك…</div>;
+    if (subscription === undefined) return <div className="min-h-screen grid place-items-center bg-slate-950" role="status" aria-label="جاري التحميل"><span className="w-10 h-10 rounded-full border-2 border-slate-700 border-t-blue-500 animate-spin" /></div>;
     if (!subscription?.enabled || new Date(subscription.expires_at) <= new Date()) return <SubscriptionExpired />;
     return <App />;
   }

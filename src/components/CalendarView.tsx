@@ -209,7 +209,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             </button>
 
             <span className="text-sm font-bold font-tajawal min-w-0 sm:min-w-[120px] flex-1 text-center text-blue-300 whitespace-nowrap">
-              {monthNamesArabic[currentMonth]} {currentYear}
+              {monthNamesArabic[currentMonth]} ({currentMonth + 1}) {currentYear}
             </span>
 
             <button
