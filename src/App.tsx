@@ -5,11 +5,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Booking, BookingStatus, PrintStatus } from './types';
-import { INITIAL_USERS, INITIAL_BOOKINGS } from './data/initialData';
 import { filterBookingsForUser, canPerformAction } from './utils/permissions';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
-import { UserSimulatorBar } from './components/UserSimulatorBar';
 import { BookingCard } from './components/BookingCard';
 import { BookingModal } from './components/BookingModal';
 import { PrintManagement } from './components/PrintManagement';
@@ -25,55 +23,37 @@ import {
   Plus,
   Filter,
   Search,
-  RotateCcw,
   Sparkles,
   Printer,
   CheckCircle2,
   Calendar,
   Layers,
 } from 'lucide-react';
+import { bookingsApi, isSupabaseConfigured, usersApi } from './lib/supabase';
+import { useAuth } from './contexts/AuthContext';
 
 export default function App() {
-  // Load initial data from localStorage or fallback
-  const [users, setUsers] = useState<User[]>(() => {
-    try {
-      const saved = localStorage.getItem('photo_studio_users');
-      return saved ? JSON.parse(saved) : INITIAL_USERS;
-    } catch {
-      return INITIAL_USERS;
-    }
-  });
-
-  const [bookings, setBookings] = useState<Booking[]>(() => {
-    try {
-      const saved = localStorage.getItem('photo_studio_bookings');
-      return saved ? JSON.parse(saved) : INITIAL_BOOKINGS;
-    } catch {
-      return INITIAL_BOOKINGS;
-    }
-  });
-
-  // Save to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('photo_studio_users', JSON.stringify(users));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [users]);
+  const { user: authUser } = useAuth();
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [dataError, setDataError] = useState<string | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('photo_studio_bookings', JSON.stringify(bookings));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [bookings]);
+    if (!isSupabaseConfigured) { setIsDataLoading(false); return; }
+    let active = true;
+    const introStartedAt = Date.now();
+    Promise.all([bookingsApi.list(), usersApi.list()])
+      .then(([bookingData,userData]) => { if (active) { setBookings(bookingData || []); setUsers(userData); } })
+      .catch((error) => setDataError(error instanceof Error ? error.message : 'تعذر فتح مساحة العمل'))
+      .finally(() => {
+        const remainingIntroTime = Math.max(0, 2000 - (Date.now() - introStartedAt));
+        window.setTimeout(() => { if (active) setIsDataLoading(false); }, remainingIntroTime);
+      });
+    return () => { active = false; };
+  }, []);
 
-  // Current Logged-In / Simulated User
-  const [currentUserId, setCurrentUserId] = useState<string>('user_admin');
-  const currentUser = users.find((u) => u.id === currentUserId) || users[0];
-  const adminUser = users.find((u) => u.isSystemAdmin) || users[0];
+  const currentUser = users.find((u) => u.id === authUser?.id) || users[0];
 
   // Navigation & View Mode
   const [activeTab, setActiveTab] = useState<
@@ -103,7 +83,7 @@ export default function App() {
   };
 
   // Filter bookings according to user's assigned scope (All, Assigned Only, Selected)
-  const accessibleBookings = filterBookingsForUser(bookings, currentUser);
+  const accessibleBookings = currentUser ? filterBookingsForUser(bookings, currentUser) : [];
 
   // Apply search and status filters
   const filteredBookings = accessibleBookings.filter((b) => {
@@ -144,7 +124,7 @@ export default function App() {
     setIsModalOpen(true);
   };
 
-  const handleSaveBooking = (bookingData: Partial<Booking>) => {
+  const handleSaveBooking = async (bookingData: Partial<Booking>) => {
     if (modalMode === 'create') {
       const newBooking: Booking = {
         id: `bk_${Date.now()}`,
@@ -173,78 +153,106 @@ export default function App() {
         },
         printStatus: bookingData.printStatus || 'لم تبدأ',
         reminder: bookingData.reminder || 'قبل يوم',
-        assignedUserIds: bookingData.assignedUserIds || [currentUser.id],
+        assignedUserIds: bookingData.assignedUserIds || (authUser ? [authUser.id] : []),
         status: bookingData.status || 'مؤكد',
         createdAt: new Date().toISOString().split('T')[0],
       };
 
-      setBookings([newBooking, ...bookings]);
-      showToast(`✨ تم تسجيل الحجز "${newBooking.title}" بنجاح!`);
+      setBookings((current) => [newBooking, ...current]);
+      try {
+        const realId = await bookingsApi.create(newBooking);
+        setBookings((current) => current.map((item) => item.id === newBooking.id ? { ...item, id: realId } : item));
+        showToast(`✨ تم تسجيل الحجز "${newBooking.title}" بنجاح!`);
+      } catch (error) {
+        setBookings((current) => current.filter((item) => item.id !== newBooking.id));
+        showToast(`تعذر حفظ الحجز: ${error instanceof Error ? error.message : 'خطأ غير متوقع'}`);
+      }
     } else if (modalMode === 'edit' && selectedBookingForModal) {
       const updated = bookings.map((b) =>
         b.id === selectedBookingForModal.id ? ({ ...b, ...bookingData } as Booking) : b
       );
       setBookings(updated);
-      showToast('✅ تم حفظ التعديلات على الحجز بنجاح');
+      try { await bookingsApi.update(selectedBookingForModal.id, bookingData); showToast('✅ تم حفظ التعديلات على الحجز بنجاح'); }
+      catch (error) { setBookings(bookings); showToast(`تعذر حفظ التعديل: ${error instanceof Error ? error.message : 'خطأ غير متوقع'}`); }
     }
   };
 
-  const handleDeleteBooking = (bookingId: string) => {
+  const handleDeleteBooking = async (bookingId: string) => {
     if (window.confirm('هل أنت تأكد من إلغاء وحذف هذا الحجز نهائياً؟')) {
+      const previous = bookings;
       setBookings(bookings.filter((b) => b.id !== bookingId));
-      showToast('🗑️ تم حذف الحجز من النظام');
+      try { await bookingsApi.remove(bookingId); showToast('🗑️ تم حذف الحجز من النظام'); }
+      catch (error) { setBookings(previous); showToast(`تعذر حذف الحجز: ${error instanceof Error ? error.message : 'خطأ غير متوقع'}`); }
     }
   };
 
-  const handleStatusChange = (bookingId: string, newStatus: BookingStatus) => {
+  const handleStatusChange = async (bookingId: string, newStatus: BookingStatus) => {
     setBookings(
       bookings.map((b) => (b.id === bookingId ? { ...b, status: newStatus } : b))
     );
-    showToast(`🔄 تم تغيير حالة الحجز إلى "${newStatus}"`);
+    try { await bookingsApi.update(bookingId, { status:newStatus }); showToast(`🔄 تم تغيير حالة الحجز إلى "${newStatus}"`); }
+    catch (error) { const fresh = await bookingsApi.list().catch(() => null); if (fresh) setBookings(fresh); showToast(`تعذر تغيير الحالة: ${error instanceof Error ? error.message : 'خطأ غير متوقع'}`); }
   };
 
-  const handlePrintStatusChange = (bookingId: string, newPrintStatus: PrintStatus) => {
+  const handlePrintStatusChange = async (bookingId: string, newPrintStatus: PrintStatus) => {
     setBookings(
       bookings.map((b) => (b.id === bookingId ? { ...b, printStatus: newPrintStatus } : b))
     );
-    showToast(`🖨️ تم تحديث حالة الطباعة إلى "${newPrintStatus}"`);
+    try { await bookingsApi.updatePrintStatus(bookingId, newPrintStatus); showToast(`🖨️ تم تحديث حالة الطباعة إلى "${newPrintStatus}"`); }
+    catch (error) { const fresh = await bookingsApi.list().catch(() => null); if (fresh) setBookings(fresh); showToast(`تعذر تحديث الطباعة: ${error instanceof Error ? error.message : 'خطأ غير متوقع'}`); }
   };
 
   // User management handlers
-  const handleSaveUser = (updatedUser: User) => {
+  const handleSaveUser = async (updatedUser: User) => {
     const exists = users.some((u) => u.id === updatedUser.id);
     if (exists) {
       setUsers(users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
-      showToast(`⚙️ تم تحديث صلاحيات وحقول المستخدم "${updatedUser.name}"`);
+      try { await usersApi.update(updatedUser); showToast(`⚙️ تم تحديث صلاحيات وحقول المستخدم "${updatedUser.name}"`); }
+      catch(error) { setUsers(await usersApi.list().catch(()=>users)); showToast(`تعذر تحديث المستخدم: ${error instanceof Error?error.message:'خطأ غير متوقع'}`); }
     } else {
-      setUsers([...users, updatedUser]);
-      showToast(`👤 تم إضافة المستخدم الجديد "${updatedUser.name}"`);
+      showToast('أنشئ حساب العضو من صفحة التسجيل أولاً، ثم عدّل صلاحياته هنا.');
     }
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     if (window.confirm('هل أنت متاكد من حذف هذا المستخدم؟')) {
-      setUsers(users.filter((u) => u.id !== userId));
-      if (currentUserId === userId) {
-        setCurrentUserId('user_admin');
-      }
-      showToast('🗑️ تم حذف المستخدم');
-    }
-  };
-
-  const handleResetSampleData = () => {
-    if (window.confirm('إعادة ضبط كافة البيانات والطباعة والصلاحيات للوضع الافتراضي؟')) {
-      setUsers(INITIAL_USERS);
-      setBookings(INITIAL_BOOKINGS);
-      setCurrentUserId('user_admin');
-      showToast('🔄 تم استعادة البيانات النموذجية الافتراضية');
+      const previous=users;setUsers(users.filter((u) => u.id !== userId));
+      try { await usersApi.removeProfile(userId); showToast('🗑️ تم حذف ملف المستخدم وصلاحياته'); }
+      catch(error){setUsers(previous);showToast(`تعذر حذف المستخدم: ${error instanceof Error?error.message:'خطأ غير متوقع'}`);}
     }
   };
 
   const printJobsCount = accessibleBookings.filter((b) => b.hasPrint).length;
 
+  if (dataError || (!isDataLoading && !currentUser)) return (
+    <div dir="rtl" className="min-h-screen grid place-items-center bg-slate-950 text-white font-cairo px-5">
+      <div className="max-w-md text-center bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl">
+        <div className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-rose-500/10 text-rose-400 grid place-items-center"><Layers className="w-7 h-7" /></div>
+        <h1 className="text-xl font-black mb-3">تعذر فتح مساحة العمل</h1>
+        <p className="text-sm leading-7 text-slate-400 mb-6">{dataError || 'لا يوجد ملف مستخدم مرتبط بهذا الحساب. طبّق migrations قاعدة البيانات ثم سجّل الدخول من جديد.'}</p>
+        <button onClick={() => window.location.reload()} className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 font-bold text-sm transition-colors">إعادة المحاولة</button>
+      </div>
+    </div>
+  );
+
+  if (isDataLoading) return (
+    <div dir="rtl" className="studio-loader-shell font-cairo" role="status" aria-label="جاري تجهيز مساحة العمل">
+      <div className="studio-loader-glow" />
+      <div className="studio-loader-content">
+        <div className="studio-loader-camera">
+          <span className="studio-loader-ring" />
+          <span className="studio-loader-lens"><span /></span>
+          <span className="studio-loader-flash" />
+        </div>
+        <div className="studio-loader-brand">Studio Flow</div>
+        <p>نجهّز مساحة عملك</p>
+        <div className="studio-loader-dots" aria-hidden="true"><i /><i /><i /></div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-slate-100/70 text-slate-900 pb-20 font-cairo flex flex-col lg:flex-row">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-100/70 text-slate-900 pb-20 font-cairo flex flex-col lg:flex-row">
       {/* Toast Banner */}
       {toastMessage && (
         <div className="fixed bottom-5 left-5 z-50 bg-slate-900 text-white font-semibold px-5 py-3 rounded-xl shadow-xl border border-slate-800 flex items-center gap-3 animate-in slide-in-from-bottom-4 text-xs sm:text-sm">
@@ -259,8 +267,6 @@ export default function App() {
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         currentUser={currentUser}
-        allUsers={users}
-        onSelectUser={(u) => setCurrentUserId(u.id)}
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onOpenCreateModal={handleOpenCreateModal}
@@ -273,12 +279,10 @@ export default function App() {
       />
 
       {/* Main Studio Content Area */}
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="flex-1 min-w-0 flex flex-col pt-20 lg:pt-0 lg:mr-72">
         {/* Main Studio Header */}
         <Header
           currentUser={currentUser}
-          allUsers={users}
-          onSelectUser={(u) => setCurrentUserId(u.id)}
           activeTab={activeTab}
           onTabChange={setActiveTab}
           onOpenCreateModal={handleOpenCreateModal}
@@ -287,18 +291,11 @@ export default function App() {
           onSearchChange={setSearchQuery}
           totalBookingsCount={accessibleBookings.length}
           printingJobsCount={printJobsCount}
-        />
-
-        {/* Live User Permission Simulator Indicator */}
-        <UserSimulatorBar
-          currentUser={currentUser}
-          adminUser={adminUser}
-          onResetToAdmin={() => setCurrentUserId('user_admin')}
-          visibleBookingsCount={accessibleBookings.length}
+          bookings={accessibleBookings}
         />
 
         {/* Main Container Body */}
-        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+        <main className="w-full min-w-0 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6 overflow-x-hidden">
         {/* Tab 1: Bookings Management */}
         {activeTab === 'bookings' && (
           <div className="space-y-6">
@@ -381,15 +378,6 @@ export default function App() {
 
               {/* View Switcher (Cards vs Kanban vs Table) */}
               <div className="flex items-center gap-2 justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
-                <button
-                  onClick={handleResetSampleData}
-                  className="p-2 text-slate-400 hover:text-slate-700 bg-slate-100 rounded-xl transition-colors text-xs font-bold flex items-center gap-1 cursor-pointer"
-                  title="إعادة ضبط البيانات النموذجية"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">إعادة ضبط</span>
-                </button>
-
                 <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl">
                   <button
                     onClick={() => setViewMode('cards')}

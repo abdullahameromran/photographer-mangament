@@ -94,6 +94,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [price, setPrice] = useState<number>(8000);
   const [hasDeposit, setHasDeposit] = useState<boolean>(true);
   const [depositAmount, setDepositAmount] = useState<number>(3000);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   // Printing
   const [hasPrint, setHasPrint] = useState<boolean>(false);
@@ -233,18 +234,37 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: string[] = [];
+    const cleanName = customerName.trim();
+    const cleanTitle = title.trim();
+    const cleanPhone = phone.replace(/\D/g, '');
+    const cleanWhatsapp = whatsapp.replace(/\D/g, '');
+
+    if (!cleanName || cleanName.length < 2) errors.push('اسم العميل يجب أن يكون حرفين على الأقل.');
+    if (!cleanTitle || cleanTitle.length < 2) errors.push('عنوان الحجز يجب أن يكون حرفين على الأقل.');
+    if (cleanPhone && !/^01[0125]\d{8}$/.test(cleanPhone)) errors.push('رقم الموبايل يجب أن يكون 11 رقماً مصرياً صحيحاً ويبدأ بـ 010 أو 011 أو 012 أو 015.');
+    if (cleanWhatsapp && !/^01[0125]\d{8}$/.test(cleanWhatsapp)) errors.push('رقم واتساب يجب أن يكون 11 رقماً مصرياً صحيحاً.');
+    if (!date) errors.push('اختر تاريخ الحجز.');
+    if (startTime && endTime && endTime <= startTime) errors.push('وقت النهاية يجب أن يكون بعد وقت البداية.');
+    if (!Number.isFinite(price) || price < 0) errors.push('سعر الحجز يجب أن يكون رقماً موجباً.');
+    if (hasDeposit && (!Number.isFinite(depositAmount) || depositAmount <= 0)) errors.push('أدخل مبلغ عربون أكبر من صفر.');
+    if (hasDeposit && depositAmount > price) errors.push('مبلغ العربون لا يمكن أن يزيد عن سعر الحجز.');
+    if (mapUrl.trim()) { try { const parsed = new URL(mapUrl.trim()); if (!['http:','https:'].includes(parsed.protocol)) throw new Error(); } catch { errors.push('رابط الموقع غير صحيح؛ استخدم رابطاً يبدأ بـ https://'); } }
+    if (printOptions.photoCards && printOptions.photoCardsCount < 1) errors.push('أدخل عدداً صحيحاً لصور الكروت.');
+    if (errors.length) { setValidationErrors(errors); return; }
+    setValidationErrors([]);
     onSave({
-      title: title || `حجز ${customerName}`,
-      customerName,
-      phone,
-      whatsapp: whatsapp || phone,
+      title: cleanTitle || `حجز ${cleanName}`,
+      customerName: cleanName,
+      phone: cleanPhone,
+      whatsapp: cleanWhatsapp || cleanPhone,
       bookingTypes,
       date,
       startTime,
       endTime,
-      location,
-      mapUrl,
-      notes,
+      location: location.trim(),
+      mapUrl: mapUrl.trim(),
+      notes: notes.trim(),
       price,
       hasDeposit,
       depositAmount: hasDeposit ? depositAmount : 0,
@@ -313,7 +333,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6 flex-1 text-right">
+        <form onSubmit={handleSubmit} className="p-6 pb-0 overflow-y-auto space-y-6 flex-1 text-right relative isolate">
+          {validationErrors.length > 0 && (
+            <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl p-4" role="alert">
+              <p className="text-sm font-black mb-2">راجع البيانات التالية:</p>
+              <ul className="list-disc list-inside space-y-1 text-xs font-semibold">{validationErrors.map((error) => <li key={error}>{error}</li>)}</ul>
+            </div>
+          )}
           {/* Section 1: Customer Details */}
           <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200/80 space-y-4">
             <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2 border-b border-slate-200 pb-2">
@@ -330,6 +356,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   </label>
                   <input
                     type="text"
+                    minLength={2}
+                    maxLength={100}
                     required
                     disabled={!canEditName}
                     value={customerName}
@@ -351,10 +379,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     رقم الموبايل
                   </label>
                   <input
-                    type="text"
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="01[0125][0-9]{8}"
+                    maxLength={11}
+                    required
                     disabled={!canEditPhone}
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
                     placeholder="مثال: 01012345678"
                     className="w-full text-sm bg-white p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 disabled:bg-slate-100 disabled:text-slate-500 dir-ltr text-right"
                   />
@@ -372,11 +404,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     رقم الواتساب
                   </label>
                   <input
-                    type="text"
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="01[0125][0-9]{8}"
+                    maxLength={11}
                     disabled={!canEditWhatsapp}
                     value={whatsapp}
-                    onChange={(e) => setWhatsapp(e.target.value)}
-                    placeholder="مثال: 201012345678"
+                    onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                    placeholder="مثال: 01012345678"
                     className="w-full text-sm bg-white p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 disabled:bg-slate-100 disabled:text-slate-500 dir-ltr text-right"
                   />
                 </div>
@@ -469,6 +504,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     </label>
                     <input
                       type="time"
+                      required
                       disabled={!canEditTime}
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
@@ -481,6 +517,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     </label>
                     <input
                       type="time"
+                      required
                       disabled={!canEditTime}
                       value={endTime}
                       onChange={(e) => setEndTime(e.target.value)}
@@ -535,9 +572,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     <input
                       type="number"
                       min={0}
+                      step="1"
+                      required
                       disabled={!canEditPrice}
                       value={price}
-                      onChange={(e) => setPrice(Number(e.target.value))}
+                      onChange={(e) => setPrice(Math.max(0, Math.trunc(Number(e.target.value))))}
                       placeholder="8000"
                       className="w-full text-sm font-bold bg-slate-800 text-white p-2.5 rounded-lg border border-slate-700 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     />
@@ -585,9 +624,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     <input
                       type="number"
                       min={0}
+                      max={price}
+                      step="1"
+                      required
                       disabled={!canEditDeposit}
                       value={depositAmount}
-                      onChange={(e) => setDepositAmount(Number(e.target.value))}
+                      onChange={(e) => setDepositAmount(Math.max(0, Math.trunc(Number(e.target.value))))}
                       placeholder="3000"
                       className="w-full text-sm font-bold text-emerald-400 bg-slate-800 p-2.5 rounded-lg border border-slate-700 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     />
@@ -756,12 +798,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       <input
                         type="number"
                         min={1}
+                        step="1"
+                        required
                         disabled={!canEditPrint}
                         value={printOptions.photoCardsCount || ''}
                         onChange={(e) =>
                           setPrintOptions({
                             ...printOptions,
-                            photoCardsCount: Math.max(0, Number(e.target.value)),
+                            photoCardsCount: Math.max(0, Math.trunc(Number(e.target.value))),
                           })
                         }
                         placeholder="مثال: 50"
@@ -905,17 +949,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
           {/* Submit Footer */}
           {!isViewOnly && (
-            <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3 sticky bottom-0 bg-white py-2">
+            <div className="sticky bottom-0 z-50 isolate -mx-6 mt-8 px-4 sm:px-6 py-4 border-t border-slate-200 bg-white/98 backdrop-blur-md shadow-[0_-14px_30px_-18px_rgba(15,23,42,0.45)] flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-100 transition-colors cursor-pointer"
+                className="relative z-10 px-5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-semibold text-sm hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 إلغاء
               </button>
               <button
                 type="submit"
-                className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition-colors cursor-pointer"
+                className="relative z-10 flex items-center gap-2 px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition-colors cursor-pointer"
               >
                 <Save className="w-4 h-4" />
                 <span>حفظ بيانات الحجز</span>

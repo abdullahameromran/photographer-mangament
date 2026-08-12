@@ -27,8 +27,6 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: User;
-  allUsers: User[];
-  onSelectUser: (user: User) => void;
   activeTab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'users' | 'stats';
   onTabChange: (tab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'users' | 'stats') => void;
   onOpenCreateModal: () => void;
@@ -44,8 +42,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onClose,
   currentUser,
-  allUsers,
-  onSelectUser,
   activeTab,
   onTabChange,
   onOpenCreateModal,
@@ -72,8 +68,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <aside
         className={`bg-slate-900 text-white border-l border-slate-800 flex flex-col shrink-0 z-40 transition-all duration-300 ${
           isOpen
-            ? 'fixed right-0 top-0 bottom-0 w-80 max-w-[85vw] shadow-2xl h-full animate-in slide-in-from-right z-50 lg:static lg:w-72 lg:h-screen lg:sticky lg:top-0 lg:shadow-none lg:animate-none'
-            : 'hidden lg:flex lg:static lg:w-72 lg:h-screen lg:sticky lg:top-0'
+            ? 'fixed right-0 top-0 bottom-0 w-80 max-w-[85vw] shadow-2xl h-dvh animate-in slide-in-from-right z-50 lg:w-72 lg:h-dvh lg:shadow-none lg:animate-none'
+            : 'hidden lg:flex lg:fixed lg:right-0 lg:top-0 lg:bottom-0 lg:w-72 lg:h-dvh'
         }`}
       >
         {/* Sidebar Header */}
@@ -324,46 +320,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
 
-          {/* Accounts & Roles Switcher Simulator */}
-          <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-800 space-y-2">
-            <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              <span>تبديل الحساب الحالي:</span>
-              <Sparkles className="w-3 h-3 text-blue-400" />
-            </div>
-            <div className="space-y-1 max-h-48 overflow-y-auto no-scrollbar">
-              {allUsers.map((u) => {
-                const isSelected = u.id === currentUser.id;
-                return (
-                  <button
-                    key={u.id}
-                    onClick={() => {
-                      onSelectUser(u);
-                    }}
-                    className={`w-full text-right p-2 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${
-                      isSelected
-                        ? 'bg-blue-600/30 text-blue-300 border border-blue-500/40 font-bold'
-                        : 'text-slate-300 hover:bg-slate-800'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={u.avatar}
-                        alt={u.name}
-                        className="w-7 h-7 rounded-full object-cover"
-                      />
-                      <div>
-                        <div className="font-bold text-slate-200">{u.name}</div>
-                        <div className="text-[10px] text-slate-400">
-                          {u.role}
-                        </div>
-                      </div>
-                    </div>
-                    {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </div>
 
         {/* Sidebar Footer: Current User Status */}
@@ -373,7 +329,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             alt={currentUser.name}
             className="w-9 h-9 rounded-full object-cover ring-2 ring-blue-500/40 shrink-0"
           />
-          <div className="flex-1 min-w-0">
+          <div className="hidden sm:block flex-1 min-w-0">
             <div className="text-xs font-bold text-white truncate">
               {currentUser.name}
             </div>

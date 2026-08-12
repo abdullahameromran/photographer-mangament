@@ -15,7 +15,7 @@ import {
   X,
   Search,
 } from 'lucide-react';
-import { canViewField } from '../utils/permissions';
+import { canViewField, getPhoneUrl, getWhatsAppUrl } from '../utils/permissions';
 
 interface CalendarViewProps {
   bookings: Booking[];
@@ -177,13 +177,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Calendar Header Control Bar */}
-      <div className="bg-slate-900 text-white rounded-xl p-6 shadow-md border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold">
+      <div className="w-full min-w-0 overflow-hidden bg-slate-900 text-white rounded-xl p-4 sm:p-6 shadow-md border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold">
             <CalendarIcon className="w-6 h-6" />
           </div>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold font-tajawal">تقويم الحجوزات والمواعيد</h2>
+          <div className="min-w-0">
+            <h2 className="text-base sm:text-2xl font-bold font-tajawal leading-tight">تقويم الحجوزات والمواعيد</h2>
             <p className="text-xs text-slate-400">
               عرض شهري تفصيلي تفاعلي لجميع جلسات التصوير والفعاليات
             </p>
@@ -191,15 +191,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </div>
 
         {/* Month Navigation */}
-        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto md:justify-end">
           <button
             onClick={handleGoToday}
-            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-lg border border-slate-700 transition-colors cursor-pointer"
+            className="order-2 sm:order-none w-full sm:w-auto px-3 py-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-lg border border-slate-700 transition-colors cursor-pointer"
           >
             الشهر الحالي
           </button>
 
-          <div className="flex items-center gap-2 bg-slate-800/90 p-1.5 rounded-xl border border-slate-700/80">
+          <div className="col-span-2 order-1 sm:order-none flex min-w-0 items-center justify-between gap-1 sm:gap-2 bg-slate-800/90 p-1.5 rounded-xl border border-slate-700/80">
             <button
               onClick={handlePrevMonth}
               className="p-1.5 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition-colors cursor-pointer"
@@ -208,7 +208,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               <ChevronRight className="w-5 h-5" />
             </button>
 
-            <span className="text-sm font-bold font-tajawal min-w-[120px] text-center text-blue-300">
+            <span className="text-sm font-bold font-tajawal min-w-0 sm:min-w-[120px] flex-1 text-center text-blue-300 whitespace-nowrap">
               {monthNamesArabic[currentMonth]} {currentYear}
             </span>
 
@@ -223,7 +223,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
           <button
             onClick={() => onOpenCreateModalWithDate(selectedDate || '2026-08-12')}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer shrink-0"
+            className="order-3 sm:order-none w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-3 sm:px-4 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer min-w-0"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>حجز جديد</span>
@@ -425,21 +425,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     </div>
 
                     <div className="text-[11px] text-slate-600 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span>العميل: {b.customerName}</span>
-                        <a
-                          href={`tel:${b.phone}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-blue-600 hover:underline font-bold"
-                        >
-                          {b.phone}
-                        </a>
-                      </div>
+                      <div className="flex items-center justify-between gap-2"><span className="truncate">العميل: {b.customerName}</span><span className="dir-ltr text-slate-400 shrink-0">{b.phone}</span></div>
 
                       <div className="flex items-center gap-1 text-slate-500 truncate">
                         <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
                         <span className="truncate">{b.location}</span>
                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                      <a href={getPhoneUrl(b.phone)} className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-[11px] font-black hover:bg-blue-100 transition-colors"><Phone className="w-3.5 h-3.5"/> اتصال</a>
+                      <a href={getWhatsAppUrl(b.whatsapp || b.phone, `مرحباً ${b.customerName}، بخصوص حجز ${b.title}`)} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-500 text-white text-[11px] font-black hover:bg-emerald-600 transition-colors"><MessageCircle className="w-3.5 h-3.5"/> واتساب</a>
                     </div>
 
                     {canViewPrice && (

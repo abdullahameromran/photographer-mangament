@@ -18,6 +18,7 @@ import {
   CalendarDays,
   ExternalLink,
 } from 'lucide-react';
+import { getPhoneUrl, getWhatsAppUrl } from '../utils/permissions';
 import { canViewField, canPerformAction } from '../utils/permissions';
 
 interface TodaySessionsViewProps {
@@ -331,22 +332,24 @@ export const TodaySessionsView: React.FC<TodaySessionsViewProps> = ({
                   <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80 space-y-2 text-xs">
                     <div className="flex items-center justify-between text-slate-800 font-semibold">
                       <span>العميل: {booking.customerName}</span>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <a
-                          href={`tel:${booking.phone}`}
-                          className="p-1.5 bg-white hover:bg-slate-200 text-slate-700 rounded border border-slate-300 transition-colors flex items-center justify-center"
+                          href={getPhoneUrl(booking.phone)}
+                          className="px-2 py-1.5 bg-white hover:bg-blue-50 text-blue-700 rounded-lg border border-blue-200 transition-colors flex items-center gap-1 font-bold text-[10px]"
                           title="اتصال هاتفي"
                         >
                           <Phone className="w-3.5 h-3.5 text-blue-600" />
+                          <span>اتصال</span>
                         </a>
                         <a
-                          href={`https://wa.me/${booking.whatsapp.replace('+', '')}`}
+                          href={getWhatsAppUrl(booking.whatsapp || booking.phone, `مرحباً ${booking.customerName}، بخصوص حجز ${booking.title}`)}
                           target="_blank"
                           rel="noreferrer"
-                          className="p-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded transition-colors flex items-center justify-center"
+                          className="px-2 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors flex items-center gap-1 font-bold text-[10px]"
                           title="مراسلة واتساب"
                         >
                           <MessageCircle className="w-3.5 h-3.5" />
+                          <span>واتساب</span>
                         </a>
                       </div>
                     </div>

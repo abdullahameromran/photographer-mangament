@@ -99,3 +99,15 @@ export function formatDateArabic(dateStr: string): string {
     return dateStr;
   }
 }
+
+/** Convert local Egyptian numbers to the international format WhatsApp expects. */
+export function getWhatsAppUrl(phone: string, message = ''): string {
+  let digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('0')) digits = `20${digits.slice(1)}`;
+  const text = message ? `?text=${encodeURIComponent(message)}` : '';
+  return `https://wa.me/${digits}${text}`;
+}
+
+export function getPhoneUrl(phone: string): string {
+  return `tel:${phone.replace(/[^\d+]/g, '')}`;
+}

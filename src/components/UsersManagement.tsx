@@ -10,10 +10,6 @@ import {
   UserPermissions,
 } from '../types';
 import {
-  ASSISTANT_FIELD_PERMISSIONS,
-  DEFAULT_FULL_FIELD_PERMISSIONS,
-} from '../data/initialData';
-import {
   Users,
   Shield,
   UserPlus,
@@ -31,6 +27,16 @@ import {
   X,
   AlertCircle,
 } from 'lucide-react';
+
+const DEFAULT_FULL_FIELD_PERMISSIONS = Object.fromEntries(
+  ALL_FIELD_KEYS.map(({ key }) => [key, { view: true, edit: true }]),
+) as UserPermissions['fields'];
+const ASSISTANT_FIELD_PERMISSIONS = Object.fromEntries(
+  ALL_FIELD_KEYS.map(({ key }) => [key, {
+    view: !['price', 'depositAmount', 'remaining', 'paymentStatus'].includes(key),
+    edit: key === 'printSettings',
+  }]),
+) as UserPermissions['fields'];
 
 interface UsersManagementProps {
   users: User[];
@@ -229,7 +235,7 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
             <thead className="bg-slate-100/70 text-slate-700 font-bold border-b border-slate-200">
               <tr>
                 <th className="p-4 pr-6">المستخدم</th>
-                <th className="p-4">الدور الوظيفي</th>
+                <th className="hidden sm:table-cell p-4">الدور الوظيفي</th>
                 <th className="p-4">الحالة</th>
                 <th className="p-4">نطاق الحجوزات</th>
                 <th className="p-4">الماليات والحقول الحساسة</th>
@@ -265,7 +271,7 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-slate-400 dir-ltr text-right">
+                          <div className="hidden sm:block text-xs text-slate-400 dir-ltr text-right">
                             {u.email}
                           </div>
                         </div>
@@ -273,7 +279,7 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                     </td>
 
                     {/* Role */}
-                    <td className="p-4 font-bold text-slate-700">
+                    <td className="hidden sm:table-cell p-4 font-bold text-slate-700">
                       <span className="bg-slate-100 px-3 py-1 rounded-xl border border-slate-200">
                         {u.role}
                       </span>
