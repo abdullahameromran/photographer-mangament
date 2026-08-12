@@ -87,6 +87,7 @@
 #how { background:radial-gradient(circle at 15% 30%,rgba(37,99,235,.25),transparent 27%),radial-gradient(circle at 88% 75%,rgba(124,58,237,.18),transparent 25%),#060d1c; }
 .pricing-bg { background:radial-gradient(circle at 15% 15%,rgba(16,185,129,.1),transparent 23%),radial-gradient(circle at 90% 75%,rgba(59,130,246,.13),transparent 25%),linear-gradient(180deg,#fff,#f1f5f9); }
 .price-card { transition:transform .3s ease,box-shadow .3s ease,border-color .3s ease }.price-card:hover{transform:translateY(-7px);box-shadow:0 30px 55px -30px rgba(37,99,235,.35);border-color:#93c5fd}.price-card.popular:hover{transform:translateY(-13px)}
+.price-card:first-child{border:2px solid #10b981;background:linear-gradient(160deg,#ecfdf5,#fff 55%)}.price-card:first-child::before{content:"ابدأ مجاناً";position:absolute;top:-13px;right:50%;transform:translateX(50%);background:#10b981;color:#fff;border-radius:99px;padding:6px 14px;font-size:.65rem;font-weight:900;white-space:nowrap}
 @keyframes landing-nav-in{from{opacity:0;transform:translate(-50%,-20px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes landing-copy-in{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
 @keyframes landing-preview-in{from{opacity:0;transform:perspective(900px) translateY(35px) rotateY(-8deg) scale(.95)}to{opacity:1;transform:perspective(900px) rotateY(-3deg) rotateX(1deg)}}

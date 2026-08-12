@@ -28,7 +28,9 @@ Deno.serve(async (req) => {
     if(permissionError){await admin.auth.admin.deleteUser(created.user.id);throw permissionError;}
     const {error:fieldError}=await admin.from('user_field_permissions').update({can_view:true,can_edit:true}).eq('user_id',created.user.id);
     if(fieldError){await admin.auth.admin.deleteUser(created.user.id);throw fieldError;}
-    const months=plan==='yearly'?12:plan==='quarterly'?3:1; const expires=new Date(); expires.setMonth(expires.getMonth()+months);
+    const expires=new Date();
+    if(plan==='trial') expires.setDate(expires.getDate()+7);
+    else expires.setMonth(expires.getMonth()+(plan==='yearly'?12:plan==='quarterly'?3:1));
     const {error:subError}=await admin.from('subscriptions').insert({user_id:created.user.id,plan_code:plan,expires_at:expires.toISOString()});
     if(subError){await admin.auth.admin.deleteUser(created.user.id);throw subError;}
     return new Response(JSON.stringify({ok:true,user_id:created.user.id}),{headers:{...cors,'Content-Type':'application/json'}});

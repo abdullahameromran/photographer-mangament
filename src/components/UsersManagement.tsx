@@ -290,12 +290,12 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                       {u.status === 'Active' ? (
                         <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          نشط (Active)
+                          نشط
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5 bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full border border-red-200">
                           <XCircle className="w-3.5 h-3.5 text-red-600" />
-                          معطل (Disabled)
+                          معطل
                         </span>
                       )}
                     </td>
@@ -401,7 +401,7 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                     onClick={applyFullAdminPreset}
                     className="px-3 py-1.5 bg-slate-900 text-amber-400 hover:bg-slate-800 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
                   >
-                    ⚡ صلاحيات كاملة (Admin)
+                    ⚡ صلاحيات كاملة للمدير
                   </button>
                 </div>
               </div>
@@ -453,9 +453,9 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                       <option value="مصور">مصور</option>
                       <option value="مساعد">مساعد</option>
                       <option value="موظف">موظف</option>
-                      <option value="Editor">Editor (مونتير)</option>
-                      <option value="Manager">Manager</option>
-                      <option value="Admin">Admin</option>
+                      <option value="Editor">مونتير</option>
+                      <option value="Manager">مدير</option>
+                      <option value="Admin">مدير النظام</option>
                     </select>
                   </div>
 
@@ -468,8 +468,8 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                       onChange={(e) => setStatus(e.target.value as UserStatus)}
                       className="w-full text-sm font-bold bg-white p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500"
                     >
-                      <option value="Active">نشط (Active)</option>
-                      <option value="Disabled">معطل (Disabled)</option>
+                      <option value="Active">نشط</option>
+                      <option value="Disabled">معطل</option>
                     </select>
                   </div>
                 </div>
@@ -511,7 +511,7 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                         الحجوزات الخاصة به فقط (Assigned Only)
                       </div>
                       <div className="text-[11px] text-slate-500">
-                        يشاهد فقط الحجوزات التي قام الـ Admin بإسنادها له.
+                        يشاهد فقط الحجوزات التي قام المدير بإسنادها له.
                       </div>
                     </div>
                   </label>
@@ -527,7 +527,7 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                     <div>
                       <div className="font-bold text-xs text-slate-900">حجوزات محددة باليد</div>
                       <div className="text-[11px] text-slate-500">
-                        الـ Admin يختار يدويًا الحجوزات التي يستطيع هذا المستخدم الوصول إليها.
+                        يختار المدير يدوياً الحجوزات التي يستطيع هذا المستخدم الوصول إليها.
                       </div>
                     </div>
                   </label>
@@ -668,8 +668,8 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                       <tr>
                         <th className="p-3">اسم الحقل (Field)</th>
                         <th className="p-3">المجموعة</th>
-                        <th className="p-3 text-center">رؤية (View)</th>
-                        <th className="p-3 text-center">تعديل (Edit)</th>
+                        <th className="p-3 text-center">صلاحية العرض</th>
+                        <th className="p-3 text-center">صلاحية التعديل</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -714,7 +714,7 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                                     : 'bg-red-100 text-red-800 border border-red-300'
                                 }`}
                               >
-                                {current.view ? '✓ مسموح View' : '✕ مخفي'}
+                                {current.view ? '✓ مسموح بالعرض' : '✕ مخفي'}
                               </button>
                             </td>
 
@@ -738,7 +738,7 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                                     : 'bg-slate-100 text-slate-400 border border-slate-200'
                                 } disabled:opacity-40`}
                               >
-                                {current.edit && current.view ? '✓ مسموح Edit' : '✕ للقراءة فقط'}
+                                {current.edit && current.view ? '✓ مسموح بالتعديل' : '✕ للقراءة فقط'}
                               </button>
                             </td>
                           </tr>

@@ -44,6 +44,7 @@ export interface PrintOptions {
   photoCards: boolean; // صور كروت
   photoCardsCount: number; // عدد الصور
 }
+export interface BookingTypeSchedule { type: BookingType; date: string; startTime: string; endTime: string; }
 
 export interface Booking {
   id: string;
@@ -55,6 +56,7 @@ export interface Booking {
   // Booking details
   title: string; // e.g. حنة فاطمة
   bookingTypes: BookingType[];
+  typeSchedules?: BookingTypeSchedule[];
   date: string; // YYYY-MM-DD
   startTime: string; // e.g. 19:00
   endTime: string; // e.g. 23:00

@@ -134,6 +134,7 @@ export default function App() {
         phone: bookingData.phone || '',
         whatsapp: bookingData.whatsapp || bookingData.phone || '',
         bookingTypes: bookingData.bookingTypes || ['سيشن'],
+        typeSchedules: bookingData.typeSchedules || [],
         date: bookingData.date || new Date().toISOString().split('T')[0],
         startTime: bookingData.startTime || '18:00',
         endTime: bookingData.endTime || '22:00',

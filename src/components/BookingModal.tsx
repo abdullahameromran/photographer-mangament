@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Booking,
   User,
@@ -7,14 +7,14 @@ import {
   BookingType,
   ReminderOption,
   PrintOptions,
-} from '../types';
+} from "../types";
 import {
   canViewField,
   canEditField,
   canPerformAction,
   calculateFinancials,
   formatCurrency,
-} from '../utils/permissions';
+} from "../utils/permissions";
 import {
   X,
   Save,
@@ -31,37 +31,37 @@ import {
   Lock,
   Sparkles,
   CheckCircle2,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (bookingData: Partial<Booking>) => void;
   initialBooking?: Booking | null;
-  mode: 'create' | 'edit' | 'view';
+  mode: "create" | "edit" | "view";
   currentUser: User;
   allUsers: User[];
 }
 
 const BOOKING_TYPES_LIST: BookingType[] = [
-  'سيشن',
-  'قاعة',
-  'حنة',
-  'شبكة',
-  'كتب كتاب',
-  'بارتي',
-  'Wedding',
-  'أخرى',
+  "سيشن",
+  "قاعة",
+  "حنة",
+  "شبكة",
+  "كتب كتاب",
+  "بارتي",
+  "Wedding",
+  "أخرى",
 ];
 
 const REMINDER_OPTIONS: ReminderOption[] = [
-  'قبل ساعة',
-  'قبل ساعتين',
-  'قبل 3 ساعات',
-  'قبل 6 ساعات',
-  'قبل 12 ساعة',
-  'قبل يوم',
-  'مخصص',
+  "قبل ساعة",
+  "قبل ساعتين",
+  "قبل 3 ساعات",
+  "قبل 6 ساعات",
+  "قبل 12 ساعة",
+  "قبل يوم",
+  "مخصص",
 ];
 
 export const BookingModal: React.FC<BookingModalProps> = ({
@@ -75,20 +75,22 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const isViewOnly = mode === 'view';
+  const isViewOnly = mode === "view";
 
   // Form State
-  const [title, setTitle] = useState('');
-  const [customerName, setCustomerName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [whatsapp, setWhatsapp] = useState('');
-  const [bookingTypes, setBookingTypes] = useState<BookingType[]>(['سيشن']);
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [startTime, setStartTime] = useState('18:00');
-  const [endTime, setEndTime] = useState('22:00');
-  const [location, setLocation] = useState('');
-  const [mapUrl, setMapUrl] = useState('');
-  const [notes, setNotes] = useState('');
+  const [title, setTitle] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [bookingTypes, setBookingTypes] = useState<BookingType[]>(["سيشن"]);
+  const [separateSchedules,setSeparateSchedules]=useState(false);
+  const [typeSchedules,setTypeSchedules]=useState<Record<string,{date:string;startTime:string;endTime:string}>>({});
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [startTime, setStartTime] = useState("18:00");
+  const [endTime, setEndTime] = useState("22:00");
+  const [location, setLocation] = useState("");
+  const [mapUrl, setMapUrl] = useState("");
+  const [notes, setNotes] = useState("");
 
   // Financials
   const [price, setPrice] = useState<number>(8000);
@@ -106,30 +108,32 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     photoCards: false,
     photoCardsCount: 0,
   });
-  const [printStatus, setPrintStatus] = useState<PrintStatus>('لم تبدأ');
+  const [printStatus, setPrintStatus] = useState<PrintStatus>("لم تبدأ");
 
   // Reminder & Assignment & Status
-  const [reminder, setReminder] = useState<ReminderOption>('قبل يوم');
-  const [customReminderText, setCustomReminderText] = useState('');
+  const [reminder, setReminder] = useState<ReminderOption>("قبل يوم");
+  const [customReminderText, setCustomReminderText] = useState("");
   const [assignedUserIds, setAssignedUserIds] = useState<string[]>([]);
-  const [status, setStatus] = useState<BookingStatus>('جديد');
+  const [status, setStatus] = useState<BookingStatus>("جديد");
 
   // Load initial data if editing/viewing or creating with date
   useEffect(() => {
     if (initialBooking) {
-      setTitle(initialBooking.title || '');
-      setCustomerName(initialBooking.customerName || '');
-      setPhone(initialBooking.phone || '');
-      setWhatsapp(initialBooking.whatsapp || '');
-      setBookingTypes(initialBooking.bookingTypes || ['سيشن']);
+      setTitle(initialBooking.title || "");
+      setCustomerName(initialBooking.customerName || "");
+      setPhone(initialBooking.phone || "");
+      setWhatsapp(initialBooking.whatsapp || "");
+      setBookingTypes(initialBooking.bookingTypes || ["سيشن"]);
+      setSeparateSchedules(Boolean(initialBooking.typeSchedules?.length));
+      setTypeSchedules(Object.fromEntries((initialBooking.typeSchedules||[]).map(s=>[s.type,{date:s.date,startTime:s.startTime,endTime:s.endTime}])));
       if (initialBooking.date) {
         setDate(initialBooking.date);
       }
-      setStartTime(initialBooking.startTime || '18:00');
-      setEndTime(initialBooking.endTime || '22:00');
-      setLocation(initialBooking.location || '');
-      setMapUrl(initialBooking.mapUrl || '');
-      setNotes(initialBooking.notes || '');
+      setStartTime(initialBooking.startTime || "18:00");
+      setEndTime(initialBooking.endTime || "22:00");
+      setLocation(initialBooking.location || "");
+      setMapUrl(initialBooking.mapUrl || "");
+      setNotes(initialBooking.notes || "");
 
       setPrice(initialBooking.price || 0);
       setHasDeposit(initialBooking.hasDeposit ?? false);
@@ -144,26 +148,26 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           album30x60: false,
           photoCards: false,
           photoCardsCount: 0,
-        }
+        },
       );
-      setPrintStatus(initialBooking.printStatus || 'لم تبدأ');
+      setPrintStatus(initialBooking.printStatus || "لم تبدأ");
 
-      setReminder(initialBooking.reminder || 'قبل يوم');
-      setCustomReminderText(initialBooking.customReminderText || '');
+      setReminder(initialBooking.reminder || "قبل يوم");
+      setCustomReminderText(initialBooking.customReminderText || "");
       setAssignedUserIds(initialBooking.assignedUserIds || []);
-      setStatus(initialBooking.status || 'جديد');
+      setStatus(initialBooking.status || "جديد");
     } else {
       // Default new booking
-      setTitle('');
-      setCustomerName('');
-      setPhone('');
-      setWhatsapp('');
-      setBookingTypes(['سيشن']);
-      setDate(new Date().toISOString().split('T')[0]);
-      setStartTime('18:00');
-      setEndTime('22:00');
-      setLocation('');
-      setNotes('');
+      setTitle("");
+      setCustomerName("");
+      setPhone("");
+      setWhatsapp("");
+      setBookingTypes(["سيشن"]);
+      setDate(new Date().toISOString().split("T")[0]);
+      setStartTime("18:00");
+      setEndTime("22:00");
+      setLocation("");
+      setNotes("");
       setPrice(8000);
       setHasDeposit(true);
       setDepositAmount(3000);
@@ -176,82 +180,118 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         photoCards: true,
         photoCardsCount: 30,
       });
-      setPrintStatus('لم تبدأ');
-      setReminder('قبل يوم');
+      setPrintStatus("لم تبدأ");
+      setReminder("قبل يوم");
       setAssignedUserIds([currentUser.id]);
-      setStatus('مؤكد');
+      setStatus("مؤكد");
     }
   }, [initialBooking, isOpen, currentUser]);
 
   // Financial auto calculations
-  const { paid, remaining, paymentStatus } = calculateFinancials(price, hasDeposit, depositAmount);
+  const { paid, remaining, paymentStatus } = calculateFinancials(
+    price,
+    hasDeposit,
+    depositAmount,
+  );
 
   // Field permission checks
-  const canViewName = canViewField(currentUser, 'customerName');
-  const canEditName = canEditField(currentUser, 'customerName') && !isViewOnly;
+  const canViewName = canViewField(currentUser, "customerName");
+  const canEditName = canEditField(currentUser, "customerName") && !isViewOnly;
 
-  const canViewPhone = canViewField(currentUser, 'phone');
-  const canEditPhone = canEditField(currentUser, 'phone') && !isViewOnly;
+  const canViewPhone = canViewField(currentUser, "phone");
+  const canEditPhone = canEditField(currentUser, "phone") && !isViewOnly;
 
-  const canViewWhatsapp = canViewField(currentUser, 'whatsapp');
-  const canEditWhatsapp = canEditField(currentUser, 'whatsapp') && !isViewOnly;
+  const canViewWhatsapp = canViewField(currentUser, "whatsapp");
+  const canEditWhatsapp = canEditField(currentUser, "whatsapp") && !isViewOnly;
 
-  const canViewTitle = canViewField(currentUser, 'title');
-  const canEditTitle = canEditField(currentUser, 'title') && !isViewOnly;
+  const canViewTitle = canViewField(currentUser, "title");
+  const canEditTitle = canEditField(currentUser, "title") && !isViewOnly;
 
-  const canViewTypes = canViewField(currentUser, 'bookingTypes');
-  const canEditTypes = canEditField(currentUser, 'bookingTypes') && !isViewOnly;
+  const canViewTypes = canViewField(currentUser, "bookingTypes");
+  const canEditTypes = canEditField(currentUser, "bookingTypes") && !isViewOnly;
 
-  const canViewDate = canViewField(currentUser, 'date');
-  const canEditDate = canEditField(currentUser, 'date') && !isViewOnly;
+  const canViewDate = canViewField(currentUser, "date");
+  const canEditDate = canEditField(currentUser, "date") && !isViewOnly;
 
-  const canViewTime = canViewField(currentUser, 'time');
-  const canEditTime = canEditField(currentUser, 'time') && !isViewOnly;
+  const canViewTime = canViewField(currentUser, "time");
+  const canEditTime = canEditField(currentUser, "time") && !isViewOnly;
 
-  const canViewLocation = canViewField(currentUser, 'location');
-  const canEditLocation = canEditField(currentUser, 'location') && !isViewOnly;
+  const canViewLocation = canViewField(currentUser, "location");
+  const canEditLocation = canEditField(currentUser, "location") && !isViewOnly;
 
-  const canViewPrice = canViewField(currentUser, 'price');
-  const canEditPrice = canEditField(currentUser, 'price') && !isViewOnly;
+  const canViewPrice = canViewField(currentUser, "price");
+  const canEditPrice = canEditField(currentUser, "price") && !isViewOnly;
 
-  const canViewDeposit = canViewField(currentUser, 'depositAmount');
-  const canEditDeposit = canEditField(currentUser, 'depositAmount') && !isViewOnly;
+  const canViewDeposit = canViewField(currentUser, "depositAmount");
+  const canEditDeposit =
+    canEditField(currentUser, "depositAmount") && !isViewOnly;
 
-  const canViewPrint = canViewField(currentUser, 'printSettings');
-  const canEditPrint = canEditField(currentUser, 'printSettings') && !isViewOnly;
+  const canViewPrint = canViewField(currentUser, "printSettings");
+  const canEditPrint =
+    canEditField(currentUser, "printSettings") && !isViewOnly;
 
-  const canViewNotes = canViewField(currentUser, 'notes');
-  const canEditNotes = canEditField(currentUser, 'notes') && !isViewOnly;
+  const canViewNotes = canViewField(currentUser, "notes");
+  const canEditNotes = canEditField(currentUser, "notes") && !isViewOnly;
 
-  const canViewReminder = canViewField(currentUser, 'reminder');
-  const canEditReminder = canEditField(currentUser, 'reminder') && !isViewOnly;
+  const canViewReminder = canViewField(currentUser, "reminder");
+  const canEditReminder = canEditField(currentUser, "reminder") && !isViewOnly;
 
-  const canViewStaff = canViewField(currentUser, 'assignedStaff');
-  const canEditStaff = canEditField(currentUser, 'assignedStaff') && !isViewOnly;
+  const canViewStaff = canViewField(currentUser, "assignedStaff");
+  const canEditStaff =
+    canEditField(currentUser, "assignedStaff") && !isViewOnly;
 
-  const canViewStatus = canViewField(currentUser, 'status');
-  const canEditStatus = canEditField(currentUser, 'status') && !isViewOnly;
+  const canViewStatus = canViewField(currentUser, "status");
+  const canEditStatus = canEditField(currentUser, "status") && !isViewOnly;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const errors: string[] = [];
     const cleanName = customerName.trim();
     const cleanTitle = title.trim();
-    const cleanPhone = phone.replace(/\D/g, '');
-    const cleanWhatsapp = whatsapp.replace(/\D/g, '');
+    const cleanPhone = phone.replace(/\D/g, "");
+    const cleanWhatsapp = whatsapp.replace(/\D/g, "");
 
-    if (!cleanName || cleanName.length < 2) errors.push('اسم العميل يجب أن يكون حرفين على الأقل.');
-    if (!cleanTitle || cleanTitle.length < 2) errors.push('عنوان الحجز يجب أن يكون حرفين على الأقل.');
-    if (cleanPhone && !/^01[0125]\d{8}$/.test(cleanPhone)) errors.push('رقم الموبايل يجب أن يكون 11 رقماً مصرياً صحيحاً ويبدأ بـ 010 أو 011 أو 012 أو 015.');
-    if (cleanWhatsapp && !/^01[0125]\d{8}$/.test(cleanWhatsapp)) errors.push('رقم واتساب يجب أن يكون 11 رقماً مصرياً صحيحاً.');
-    if (!date) errors.push('اختر تاريخ الحجز.');
-    if (startTime && endTime && endTime <= startTime) errors.push('وقت النهاية يجب أن يكون بعد وقت البداية.');
-    if (!Number.isFinite(price) || price < 0) errors.push('سعر الحجز يجب أن يكون رقماً موجباً.');
-    if (hasDeposit && (!Number.isFinite(depositAmount) || depositAmount <= 0)) errors.push('أدخل مبلغ عربون أكبر من صفر.');
-    if (hasDeposit && depositAmount > price) errors.push('مبلغ العربون لا يمكن أن يزيد عن سعر الحجز.');
-    if (mapUrl.trim()) { try { const parsed = new URL(mapUrl.trim()); if (!['http:','https:'].includes(parsed.protocol)) throw new Error(); } catch { errors.push('رابط الموقع غير صحيح؛ استخدم رابطاً يبدأ بـ https://'); } }
-    if (printOptions.photoCards && printOptions.photoCardsCount < 1) errors.push('أدخل عدداً صحيحاً لصور الكروت.');
-    if (errors.length) { setValidationErrors(errors); return; }
+    if (!cleanName || cleanName.length < 2)
+      errors.push("اسم العميل يجب أن يكون حرفين على الأقل.");
+    if (!cleanTitle || cleanTitle.length < 2)
+      errors.push("عنوان الحجز يجب أن يكون حرفين على الأقل.");
+    if (cleanPhone && !/^01[0125]\d{8}$/.test(cleanPhone))
+      errors.push(
+        "رقم الموبايل يجب أن يكون 11 رقماً مصرياً صحيحاً ويبدأ بـ 010 أو 011 أو 012 أو 015.",
+      );
+    if (cleanWhatsapp && !/^01[0125]\d{8}$/.test(cleanWhatsapp))
+      errors.push("رقم واتساب يجب أن يكون 11 رقماً مصرياً صحيحاً.");
+    if (!date) errors.push("اختر تاريخ الحجز.");
+    if (startTime && endTime && endTime <= startTime)
+      errors.push("وقت النهاية يجب أن يكون بعد وقت البداية.");
+    if (separateSchedules)
+      bookingTypes.forEach((type) => {
+        const schedule = typeSchedules[type] || { date, startTime, endTime };
+        if (!schedule.date || !schedule.startTime || !schedule.endTime)
+          errors.push(`أكمل تاريخ ووقت ${type}.`);
+        else if (schedule.endTime <= schedule.startTime)
+          errors.push(`وقت نهاية ${type} يجب أن يكون بعد وقت البداية.`);
+      });
+    if (!Number.isFinite(price) || price < 0)
+      errors.push("سعر الحجز يجب أن يكون رقماً موجباً.");
+    if (hasDeposit && (!Number.isFinite(depositAmount) || depositAmount <= 0))
+      errors.push("أدخل مبلغ عربون أكبر من صفر.");
+    if (hasDeposit && depositAmount > price)
+      errors.push("مبلغ العربون لا يمكن أن يزيد عن سعر الحجز.");
+    if (mapUrl.trim()) {
+      try {
+        const parsed = new URL(mapUrl.trim());
+        if (!["http:", "https:"].includes(parsed.protocol)) throw new Error();
+      } catch {
+        errors.push("رابط الموقع غير صحيح؛ استخدم رابطاً يبدأ بـ https://");
+      }
+    }
+    if (printOptions.photoCards && printOptions.photoCardsCount < 1)
+      errors.push("أدخل عدداً صحيحاً لصور الكروت.");
+    if (errors.length) {
+      setValidationErrors(errors);
+      return;
+    }
     setValidationErrors([]);
     onSave({
       title: cleanTitle || `حجز ${cleanName}`,
@@ -259,6 +299,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       phone: cleanPhone,
       whatsapp: cleanWhatsapp || cleanPhone,
       bookingTypes,
+      typeSchedules:separateSchedules?bookingTypes.map(type=>({type,...(typeSchedules[type]||{date,startTime,endTime})})):[],
       date,
       startTime,
       endTime,
@@ -287,6 +328,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       }
     } else {
       setBookingTypes([...bookingTypes, type]);
+      setTypeSchedules({...typeSchedules,[type]:{date,startTime,endTime}});
     }
   };
 
@@ -310,15 +352,15 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold font-tajawal">
-                {mode === 'create'
-                  ? 'إضافة حجز جديد'
-                  : mode === 'edit'
-                  ? 'تعديل تفاصيل الحجز'
-                  : 'عرض تفاصيل الحجز'}
+                {mode === "create"
+                  ? "إضافة حجز جديد"
+                  : mode === "edit"
+                    ? "تعديل تفاصيل الحجز"
+                    : "عرض تفاصيل الحجز"}
               </h2>
               <p className="text-xs text-slate-400">
-                {mode === 'create'
-                  ? 'أدخل بيانات الحجز والطباعة والحسابات الماليه'
+                {mode === "create"
+                  ? "أدخل بيانات الحجز والطباعة والحسابات الماليه"
                   : title || customerName}
               </p>
             </div>
@@ -333,11 +375,21 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 pb-0 overflow-y-auto space-y-6 flex-1 text-right relative isolate">
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 pb-0 overflow-y-auto space-y-6 flex-1 text-right relative isolate"
+        >
           {validationErrors.length > 0 && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl p-4" role="alert">
+            <div
+              className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl p-4"
+              role="alert"
+            >
               <p className="text-sm font-black mb-2">راجع البيانات التالية:</p>
-              <ul className="list-disc list-inside space-y-1 text-xs font-semibold">{validationErrors.map((error) => <li key={error}>{error}</li>)}</ul>
+              <ul className="list-disc list-inside space-y-1 text-xs font-semibold">
+                {validationErrors.map((error) => (
+                  <li key={error}>{error}</li>
+                ))}
+              </ul>
             </div>
           )}
           {/* Section 1: Customer Details */}
@@ -386,7 +438,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     required
                     disabled={!canEditPhone}
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                    onChange={(e) =>
+                      setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))
+                    }
                     placeholder="مثال: 01012345678"
                     className="w-full text-sm bg-white p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 disabled:bg-slate-100 disabled:text-slate-500 dir-ltr text-right"
                   />
@@ -410,7 +464,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     maxLength={11}
                     disabled={!canEditWhatsapp}
                     value={whatsapp}
-                    onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                    onChange={(e) =>
+                      setWhatsapp(
+                        e.target.value.replace(/\D/g, "").slice(0, 11),
+                      )
+                    }
                     placeholder="مثال: 01012345678"
                     className="w-full text-sm bg-white p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 disabled:bg-slate-100 disabled:text-slate-500 dir-ltr text-right"
                   />
@@ -435,7 +493,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               {canViewTitle && (
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    عنوان الحجز / اسم المناسبة <span className="text-red-500">*</span>
+                    عنوان الحجز / اسم المناسبة{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -466,15 +525,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                           onClick={() => toggleType(t)}
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
                             isSelected
-                              ? 'bg-amber-500 text-slate-950 border-amber-600 shadow-sm'
-                              : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                              ? "bg-amber-500 text-slate-950 border-amber-600 shadow-sm"
+                              : "bg-white text-slate-700 border-slate-300 hover:bg-slate-100"
                           } disabled:opacity-60 cursor-pointer`}
                         >
-                          {isSelected ? '✓ ' : ''} {t}
+                          {isSelected ? "✓ " : ""} {t}
                         </button>
                       );
                     })}
                   </div>
+                  {bookingTypes.length > 1 && <label className="mt-3 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs font-bold text-blue-900"><input type="checkbox" checked={separateSchedules} onChange={e=>setSeparateSchedules(e.target.checked)} className="w-4 h-4"/><span>الأنواع في أيام أو أوقات مختلفة</span></label>}
+                  {separateSchedules && <div className="mt-3 grid gap-3">{bookingTypes.map(type=>{const schedule=typeSchedules[type]||{date,startTime,endTime};return <div key={type} className="bg-white border border-slate-200 rounded-xl p-3"><strong className="text-xs text-blue-700 block mb-2">موعد {type}</strong><div className="grid grid-cols-1 sm:grid-cols-3 gap-2"><input aria-label={`تاريخ ${type}`} required type="date" value={schedule.date} onChange={e=>setTypeSchedules({...typeSchedules,[type]:{...schedule,date:e.target.value}})} className="p-2 border rounded-lg text-xs"/><input aria-label={`بداية ${type}`} required type="time" value={schedule.startTime} onChange={e=>setTypeSchedules({...typeSchedules,[type]:{...schedule,startTime:e.target.value}})} className="p-2 border rounded-lg text-xs"/><input aria-label={`نهاية ${type}`} required type="time" value={schedule.endTime} onChange={e=>setTypeSchedules({...typeSchedules,[type]:{...schedule,endTime:e.target.value}})} className="p-2 border rounded-lg text-xs"/></div></div>})}</div>}
                 </div>
               )}
 
@@ -567,7 +628,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 {canViewPrice && (
                   <div>
                     <label className="block text-xs font-bold text-slate-300 mb-1 uppercase tracking-wider text-[11px]">
-                      سعر الحجز الإجمالي (جنيه) <span className="text-red-400">*</span>
+                      سعر الحجز الإجمالي (جنيه){" "}
+                      <span className="text-red-400">*</span>
                     </label>
                     <input
                       type="number"
@@ -576,7 +638,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       required
                       disabled={!canEditPrice}
                       value={price}
-                      onChange={(e) => setPrice(Math.max(0, Math.trunc(Number(e.target.value))))}
+                      onChange={(e) =>
+                        setPrice(
+                          Math.max(0, Math.trunc(Number(e.target.value))),
+                        )
+                      }
                       placeholder="8000"
                       className="w-full text-sm font-bold bg-slate-800 text-white p-2.5 rounded-lg border border-slate-700 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     />
@@ -629,7 +695,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       required
                       disabled={!canEditDeposit}
                       value={depositAmount}
-                      onChange={(e) => setDepositAmount(Math.max(0, Math.trunc(Number(e.target.value))))}
+                      onChange={(e) =>
+                        setDepositAmount(
+                          Math.max(0, Math.trunc(Number(e.target.value))),
+                        )
+                      }
                       placeholder="3000"
                       className="w-full text-sm font-bold text-emerald-400 bg-slate-800 p-2.5 rounded-lg border border-slate-700 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     />
@@ -639,16 +709,27 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
               {/* Automatic Calculation Results Box */}
               <div className="bg-slate-800/80 p-4 rounded-lg border border-slate-700 space-y-2 relative z-10">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">الملخص المالي التلقائي:</div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  الملخص المالي التلقائي:
+                </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
                   <div>
-                    سعر الحجز: <strong className="font-bold text-white">{formatCurrency(price)}</strong>
+                    سعر الحجز:{" "}
+                    <strong className="font-bold text-white">
+                      {formatCurrency(price)}
+                    </strong>
                   </div>
                   <div>
-                    المدفوع: <strong className="font-bold text-emerald-400">{formatCurrency(paid)}</strong>
+                    المدفوع:{" "}
+                    <strong className="font-bold text-emerald-400">
+                      {formatCurrency(paid)}
+                    </strong>
                   </div>
                   <div className="bg-slate-900 text-amber-400 border border-slate-700 px-3 py-1 rounded-lg">
-                    المتبقي: <strong className="font-bold text-base">{formatCurrency(remaining)}</strong>
+                    المتبقي:{" "}
+                    <strong className="font-bold text-base">
+                      {formatCurrency(remaining)}
+                    </strong>
                   </div>
                 </div>
 
@@ -656,11 +737,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   <span>حالة الدفع:</span>
                   <span
                     className={`px-2.5 py-0.5 rounded text-xs font-bold uppercase ${
-                      paymentStatus === 'مدفوع بالكامل'
-                        ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-700'
-                        : paymentStatus === 'دفع جزء'
-                        ? 'bg-amber-900/60 text-amber-300 border border-amber-700'
-                        : 'bg-red-900/60 text-red-300 border border-red-700'
+                      paymentStatus === "مدفوع بالكامل"
+                        ? "bg-emerald-900/60 text-emerald-300 border border-emerald-700"
+                        : paymentStatus === "دفع جزء"
+                          ? "bg-amber-900/60 text-amber-300 border border-amber-700"
+                          : "bg-red-900/60 text-red-300 border border-red-700"
                     }`}
                   >
                     {paymentStatus}
@@ -725,7 +806,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                         disabled={!canEditPrint}
                         checked={printOptions.largeCanvas}
                         onChange={(e) =>
-                          setPrintOptions({ ...printOptions, largeCanvas: e.target.checked })
+                          setPrintOptions({
+                            ...printOptions,
+                            largeCanvas: e.target.checked,
+                          })
                         }
                         className="w-4 h-4 text-indigo-600 rounded"
                       />
@@ -739,7 +823,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                         disabled={!canEditPrint}
                         checked={printOptions.smallCanvas}
                         onChange={(e) =>
-                          setPrintOptions({ ...printOptions, smallCanvas: e.target.checked })
+                          setPrintOptions({
+                            ...printOptions,
+                            smallCanvas: e.target.checked,
+                          })
                         }
                         className="w-4 h-4 text-indigo-600 rounded"
                       />
@@ -753,7 +840,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                         disabled={!canEditPrint}
                         checked={printOptions.album30x45}
                         onChange={(e) =>
-                          setPrintOptions({ ...printOptions, album30x45: e.target.checked })
+                          setPrintOptions({
+                            ...printOptions,
+                            album30x45: e.target.checked,
+                          })
                         }
                         className="w-4 h-4 text-indigo-600 rounded"
                       />
@@ -767,7 +857,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                         disabled={!canEditPrint}
                         checked={printOptions.album30x60}
                         onChange={(e) =>
-                          setPrintOptions({ ...printOptions, album30x60: e.target.checked })
+                          setPrintOptions({
+                            ...printOptions,
+                            album30x60: e.target.checked,
+                          })
                         }
                         className="w-4 h-4 text-indigo-600 rounded"
                       />
@@ -781,7 +874,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                         disabled={!canEditPrint}
                         checked={printOptions.photoCards}
                         onChange={(e) =>
-                          setPrintOptions({ ...printOptions, photoCards: e.target.checked })
+                          setPrintOptions({
+                            ...printOptions,
+                            photoCards: e.target.checked,
+                          })
                         }
                         className="w-4 h-4 text-indigo-600 rounded"
                       />
@@ -801,11 +897,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                         step="1"
                         required
                         disabled={!canEditPrint}
-                        value={printOptions.photoCardsCount || ''}
+                        value={printOptions.photoCardsCount || ""}
                         onChange={(e) =>
                           setPrintOptions({
                             ...printOptions,
-                            photoCardsCount: Math.max(0, Math.trunc(Number(e.target.value))),
+                            photoCardsCount: Math.max(
+                              0,
+                              Math.trunc(Number(e.target.value)),
+                            ),
                           })
                         }
                         placeholder="مثال: 50"
@@ -822,7 +921,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     <select
                       disabled={!canEditPrint}
                       value={printStatus}
-                      onChange={(e) => setPrintStatus(e.target.value as PrintStatus)}
+                      onChange={(e) =>
+                        setPrintStatus(e.target.value as PrintStatus)
+                      }
                       className="w-full text-xs font-bold p-2.5 rounded-xl border border-slate-300 bg-white"
                     >
                       <option value="لم تبدأ">لم تبدأ</option>
@@ -848,12 +949,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               {canViewReminder && (
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    موعد التذكير (Reminder):
+                    موعد التذكير:
                   </label>
                   <select
                     disabled={!canEditReminder}
                     value={reminder}
-                    onChange={(e) => setReminder(e.target.value as ReminderOption)}
+                    onChange={(e) =>
+                      setReminder(e.target.value as ReminderOption)
+                    }
                     className="w-full text-sm bg-white p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 disabled:bg-slate-100"
                   >
                     {REMINDER_OPTIONS.map((r) => (
@@ -905,8 +1008,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                           onClick={() => toggleAssignedUser(u.id)}
                           className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
                             isAssigned
-                              ? 'bg-amber-50 border-amber-400 text-amber-950 font-bold'
-                              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                              ? "bg-amber-50 border-amber-400 text-amber-950 font-bold"
+                              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
                           }`}
                         >
                           <div className="flex items-center gap-2.5">
@@ -917,10 +1020,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                             />
                             <div className="text-xs">
                               <div>{u.name}</div>
-                              <div className="text-[10px] text-slate-400">{u.role}</div>
+                              <div className="text-[10px] text-slate-400">
+                                {u.role}
+                              </div>
                             </div>
                           </div>
-                          {isAssigned && <CheckCircle2 className="w-4 h-4 text-amber-600" />}
+                          {isAssigned && (
+                            <CheckCircle2 className="w-4 h-4 text-amber-600" />
+                          )}
                         </div>
                       );
                     })}

@@ -19,6 +19,7 @@ import { getPhoneUrl, getWhatsAppUrl } from "../utils/permissions";
 
 const contact = "201554670453";
 const plans = {
+  trial: { label: "تجربة مجانية 7 أيام", price: 0 },
   monthly: { label: "شهر", price: 200 },
   quarterly: { label: "3 شهور", price: 450 },
   yearly: { label: "سنة", price: 1500 },
@@ -132,7 +133,7 @@ export function SuperAdminPage() {
             <div>
               <h1 className="font-black">إدارة المشتركين</h1>
               <p className="text-[10px] text-slate-400">
-                Studio Flow Super Admin
+                لوحة الإدارة العليا
               </p>
             </div>
           </div>
@@ -236,6 +237,7 @@ export function SuperAdminPage() {
                       id={`plan-${s.user_id}`}
                       className="bg-slate-50 border border-slate-200 rounded-lg px-2 text-xs font-bold"
                     >
+                      <option value="trial">تجربة 7 أيام</option>
                       <option value="monthly">شهر</option>
                       <option value="quarterly">3 شهور</option>
                       <option value="yearly">سنة</option>
@@ -325,6 +327,7 @@ export function SuperAdminPage() {
                   onChange={(e) => setForm({ ...form, plan: e.target.value })}
                   className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3"
                 >
+                  <option value="trial">تجربة مجانية — 7 أيام</option>
                   <option value="monthly">شهر — 200 جنيه</option>
                   <option value="quarterly">3 شهور — 450 جنيه</option>
                   <option value="yearly">سنة — 1500 جنيه</option>

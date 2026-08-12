@@ -25,6 +25,12 @@ interface CalendarViewProps {
   onOpenCreateModalWithDate: (date: string) => void;
 }
 
+type CalendarOccurrence = Booking & {
+  occurrenceKey: string;
+  sourceBooking: Booking;
+  occurrenceType?: BookingType;
+};
+
 export const CalendarView: React.FC<CalendarViewProps> = ({
   bookings,
   currentUser,
@@ -35,8 +41,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   // Calendar state: Current Year & Month (0-indexed: 0=Jan, 7=Aug)
   const today = new Date();
   // Default to August 2026 if current year is not 2026, or use active dates from bookings
-  const defaultYear = bookings.some((b) => b.date.startsWith('2026-08')) ? 2026 : today.getFullYear();
-  const defaultMonth = bookings.some((b) => b.date.startsWith('2026-08')) ? 7 : today.getMonth();
+  const bookingDates = bookings.flatMap((booking) =>
+    booking.typeSchedules?.length ? booking.typeSchedules.map((schedule) => schedule.date) : [booking.date]
+  );
+  const defaultYear = bookingDates.some((date) => date.startsWith('2026-08')) ? 2026 : today.getFullYear();
+  const defaultMonth = bookingDates.some((date) => date.startsWith('2026-08')) ? 7 : today.getMonth();
 
   const [currentYear, setCurrentYear] = useState<number>(defaultYear);
   const [currentMonth, setCurrentMonth] = useState<number>(defaultMonth); // 0 = Jan, 7 = Aug
@@ -92,8 +101,28 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     setSelectedDate('2026-08-12');
   };
 
-  // Filter Bookings
-  const filteredBookings = bookings.filter((b) => {
+  // Expand a multi-stage booking into one calendar occurrence per scheduled type.
+  // Each occurrence keeps a reference to the original booking so editing still
+  // opens the complete booking rather than a synthetic calendar item.
+  const calendarOccurrences: CalendarOccurrence[] = bookings.flatMap((booking) => {
+    if (!booking.typeSchedules?.length) {
+      return [{ ...booking, occurrenceKey: `${booking.id}-main`, sourceBooking: booking }];
+    }
+
+    return booking.typeSchedules.map((schedule, index) => ({
+      ...booking,
+      date: schedule.date,
+      startTime: schedule.startTime,
+      endTime: schedule.endTime,
+      bookingTypes: [schedule.type],
+      occurrenceType: schedule.type,
+      occurrenceKey: `${booking.id}-${schedule.type}-${schedule.date}-${schedule.startTime}-${index}`,
+      sourceBooking: booking,
+    }));
+  });
+
+  // Filter calendar occurrences
+  const filteredBookings = calendarOccurrences.filter((b) => {
     const matchesSearch =
       !searchQuery ||
       b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -335,10 +364,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   <div className="space-y-1 overflow-y-auto max-h-[75px] no-scrollbar">
                     {dayBookings.slice(0, 3).map((b) => (
                       <div
-                        key={b.id}
+                         key={b.occurrenceKey}
                         onClick={(e) => {
                           e.stopPropagation();
-                          onEditBooking(b);
+                           onEditBooking(b.sourceBooking);
                         }}
                         className={`text-[10px] p-1 rounded font-semibold truncate border transition-transform hover:scale-[1.02] ${
                           b.status === 'مؤكد'
@@ -347,9 +376,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             ? 'bg-slate-800 text-slate-100 border-slate-700'
                             : 'bg-blue-50 text-blue-800 border-blue-200'
                         }`}
-                        title={`${formatTimeArabic(b.startTime)} - ${b.title}`}
+                         title={`${formatTimeArabic(b.startTime)} - ${b.occurrenceType ? `${b.occurrenceType} - ` : ''}${b.title}`}
                       >
-                        <span className="text-[9px] opacity-75">{formatTimeArabic(b.startTime)}</span> {b.title}
+                         <span className="text-[9px] opacity-75">{formatTimeArabic(b.startTime)}</span>{' '}
+                         {b.occurrenceType ? `${b.occurrenceType} - ` : ''}{b.title}
                       </div>
                     ))}
 
@@ -411,13 +441,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               <div className="space-y-3 mt-4 max-h-[500px] overflow-y-auto no-scrollbar">
                 {selectedDateBookings.map((b) => (
                   <div
-                    key={b.id}
-                    onClick={() => onEditBooking(b)}
+                     key={b.occurrenceKey}
+                     onClick={() => onEditBooking(b.sourceBooking)}
                     className="bg-slate-50 hover:bg-slate-100 p-3.5 rounded-xl border border-slate-200 transition-all cursor-pointer space-y-2 group"
                   >
                     <div className="flex items-start justify-between">
                       <h4 className="font-bold text-xs text-slate-900 group-hover:text-blue-600 transition-colors font-tajawal">
-                        {b.title}
+                         {b.occurrenceType ? `${b.occurrenceType} - ` : ''}{b.title}
                       </h4>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-900 text-amber-300">
                         {formatTimeArabic(b.startTime)}
