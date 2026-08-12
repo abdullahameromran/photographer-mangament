@@ -44,8 +44,6 @@ export const PrintManagement: React.FC<PrintManagementProps> = ({
     return matchesStatus && matchesSearch;
   });
 
-  const countNotStarted = printBookings.filter((b) => b.printStatus === 'لم تبدأ').length;
-  const countInProgress = printBookings.filter((b) => b.printStatus === 'جاري التجهيز').length;
   const countReady = printBookings.filter((b) => b.printStatus === 'جاهزة').length;
   const countDelivered = printBookings.filter((b) => b.printStatus === 'تم التسليم').length;
 
@@ -74,17 +72,7 @@ export const PrintManagement: React.FC<PrintManagementProps> = ({
           </div>
 
           {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-slate-800/80 border border-slate-700/80 p-3 rounded-lg text-center">
-              <div className="text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">لم تبدأ</div>
-              <div className="text-xl font-bold text-amber-400">{countNotStarted}</div>
-            </div>
-
-            <div className="bg-slate-800/80 border border-slate-700/80 p-3 rounded-lg text-center">
-              <div className="text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">جاري التجهيز</div>
-              <div className="text-xl font-bold text-blue-400">{countInProgress}</div>
-            </div>
-
+          <div className="grid grid-cols-2 gap-3">
             <div className="bg-slate-800/80 border border-slate-700/80 p-3 rounded-lg text-center">
               <div className="text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">جاهزة</div>
               <div className="text-xl font-bold text-emerald-400">{countReady}</div>
@@ -122,28 +110,6 @@ export const PrintManagement: React.FC<PrintManagementProps> = ({
             }`}
           >
             الكل ({printBookings.length})
-          </button>
-
-          <button
-            onClick={() => setFilterStatus('لم تبدأ')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-              filterStatus === 'لم تبدأ'
-                ? 'bg-amber-500 text-slate-950'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            لم تبدأ ({countNotStarted})
-          </button>
-
-          <button
-            onClick={() => setFilterStatus('جاري التجهيز')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-              filterStatus === 'جاري التجهيز'
-                ? 'bg-cyan-600 text-white'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            جاري التجهيز ({countInProgress})
           </button>
 
           <button

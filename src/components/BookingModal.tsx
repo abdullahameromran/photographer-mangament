@@ -78,10 +78,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const isViewOnly = mode === "view";
 
   // Form State
-  const [title, setTitle] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
   const [bookingTypes, setBookingTypes] = useState<BookingType[]>(["سيشن"]);
   const [separateSchedules,setSeparateSchedules]=useState(false);
   const [typeSchedules,setTypeSchedules]=useState<Record<string,{date:string;startTime:string;endTime:string}>>({});
@@ -119,10 +117,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   // Load initial data if editing/viewing or creating with date
   useEffect(() => {
     if (initialBooking) {
-      setTitle(initialBooking.title || "");
       setCustomerName(initialBooking.customerName || "");
       setPhone(initialBooking.phone || "");
-      setWhatsapp(initialBooking.whatsapp || "");
       setBookingTypes(initialBooking.bookingTypes || ["سيشن"]);
       setSeparateSchedules(Boolean(initialBooking.typeSchedules?.length));
       setTypeSchedules(Object.fromEntries((initialBooking.typeSchedules||[]).map(s=>[s.type,{date:s.date,startTime:s.startTime,endTime:s.endTime}])));
@@ -158,10 +154,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setStatus(initialBooking.status || "جديد");
     } else {
       // Default new booking
-      setTitle("");
       setCustomerName("");
       setPhone("");
-      setWhatsapp("");
       setBookingTypes(["سيشن"]);
       setDate(new Date().toISOString().split("T")[0]);
       setStartTime("18:00");
@@ -201,12 +195,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const canViewPhone = canViewField(currentUser, "phone");
   const canEditPhone = canEditField(currentUser, "phone") && !isViewOnly;
 
-  const canViewWhatsapp = canViewField(currentUser, "whatsapp");
-  const canEditWhatsapp = canEditField(currentUser, "whatsapp") && !isViewOnly;
-
-  const canViewTitle = canViewField(currentUser, "title");
-  const canEditTitle = canEditField(currentUser, "title") && !isViewOnly;
-
   const canViewTypes = canViewField(currentUser, "bookingTypes");
   const canEditTypes = canEditField(currentUser, "bookingTypes") && !isViewOnly;
 
@@ -240,27 +228,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const canEditStaff =
     canEditField(currentUser, "assignedStaff") && !isViewOnly;
 
-  const canViewStatus = canViewField(currentUser, "status");
-  const canEditStatus = canEditField(currentUser, "status") && !isViewOnly;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const errors: string[] = [];
     const cleanName = customerName.trim();
-    const cleanTitle = title.trim();
     const cleanPhone = phone.replace(/\D/g, "");
-    const cleanWhatsapp = whatsapp.replace(/\D/g, "");
 
     if (!cleanName || cleanName.length < 2)
       errors.push("اسم العميل يجب أن يكون حرفين على الأقل.");
-    if (!cleanTitle || cleanTitle.length < 2)
-      errors.push("عنوان الحجز يجب أن يكون حرفين على الأقل.");
     if (cleanPhone && !/^01[0125]\d{8}$/.test(cleanPhone))
       errors.push(
         "رقم الموبايل يجب أن يكون 11 رقماً مصرياً صحيحاً ويبدأ بـ 010 أو 011 أو 012 أو 015.",
       );
-    if (cleanWhatsapp && !/^01[0125]\d{8}$/.test(cleanWhatsapp))
-      errors.push("رقم واتساب يجب أن يكون 11 رقماً مصرياً صحيحاً.");
     if (!date) errors.push("اختر تاريخ الحجز.");
     if (startTime && endTime && endTime <= startTime)
       errors.push("وقت النهاية يجب أن يكون بعد وقت البداية.");
@@ -294,10 +273,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     }
     setValidationErrors([]);
     onSave({
-      title: cleanTitle || `حجز ${cleanName}`,
+      title: `${bookingTypes.join(" + ")} - ${cleanName}`,
       customerName: cleanName,
       phone: cleanPhone,
-      whatsapp: cleanWhatsapp || cleanPhone,
+      whatsapp: cleanPhone,
       bookingTypes,
       typeSchedules:separateSchedules?bookingTypes.map(type=>({type,...(typeSchedules[type]||{date,startTime,endTime})})):[],
       date,
@@ -361,7 +340,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               <p className="text-xs text-slate-400">
                 {mode === "create"
                   ? "أدخل بيانات الحجز والطباعة والحسابات الماليه"
-                  : title || customerName}
+                  : initialBooking?.title || customerName}
               </p>
             </div>
           </div>
@@ -451,33 +430,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </div>
               )}
 
-              {/* WhatsApp */}
-              {canViewWhatsapp ? (
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    رقم الواتساب
-                  </label>
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    pattern="01[0125][0-9]{8}"
-                    maxLength={11}
-                    disabled={!canEditWhatsapp}
-                    value={whatsapp}
-                    onChange={(e) =>
-                      setWhatsapp(
-                        e.target.value.replace(/\D/g, "").slice(0, 11),
-                      )
-                    }
-                    placeholder="مثال: 01012345678"
-                    className="w-full text-sm bg-white p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 disabled:bg-slate-100 disabled:text-slate-500 dir-ltr text-right"
-                  />
-                </div>
-              ) : (
-                <div className="bg-slate-100 p-2.5 rounded-xl text-xs text-slate-400 font-bold flex items-center gap-1">
-                  <Lock className="w-3.5 h-3.5" /> الواتساب محمي
-                </div>
-              )}
             </div>
           </div>
 
@@ -489,25 +441,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Event Title */}
-              {canViewTitle && (
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    عنوان الحجز / اسم المناسبة{" "}
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    disabled={!canEditTitle}
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="مثال: حنة فاطمة ومحمد"
-                    className="w-full text-sm bg-white p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 disabled:bg-slate-100 disabled:text-slate-500 font-bold"
-                  />
-                </div>
-              )}
-
               {/* Booking Types (Multiple choice) */}
               {canViewTypes && (
                 <div className="sm:col-span-2">
@@ -592,14 +525,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               {canViewLocation && (
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    المكان والعنوان
+                    مكان السيشن أو القاعة
                   </label>
                   <input
                     type="text"
                     disabled={!canEditLocation}
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    placeholder="مثال: التجمع الخامس - قاعة اللوتس"
+                    placeholder="مثال: قاعة اللوتس أو موقع السيشن"
                     className="w-full text-sm bg-white p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 disabled:bg-slate-100 disabled:text-slate-500"
                   />
                 </div>
@@ -913,25 +846,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     </div>
                   )}
 
-                  {/* Print Status */}
-                  <div className="pt-2 border-t border-slate-200">
-                    <label className="block text-xs font-bold text-slate-800 mb-1">
-                      حالة الطباعة:
-                    </label>
-                    <select
-                      disabled={!canEditPrint}
-                      value={printStatus}
-                      onChange={(e) =>
-                        setPrintStatus(e.target.value as PrintStatus)
-                      }
-                      className="w-full text-xs font-bold p-2.5 rounded-xl border border-slate-300 bg-white"
-                    >
-                      <option value="لم تبدأ">لم تبدأ</option>
-                      <option value="جاري التجهيز">جاري التجهيز</option>
-                      <option value="جاهزة">جاهزة</option>
-                      <option value="تم التسليم">تم التسليم</option>
-                    </select>
-                  </div>
                 </div>
               )}
             </div>
@@ -968,30 +882,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </div>
               )}
 
-              {/* Status */}
-              {canViewStatus && (
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    حالة الحجز الكلية:
-                  </label>
-                  <select
-                    disabled={!canEditStatus}
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as BookingStatus)}
-                    className="w-full text-sm font-bold bg-white p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 disabled:bg-slate-100"
-                  >
-                    <option value="جديد">جديد</option>
-                    <option value="في انتظار العربون">في انتظار العربون</option>
-                    <option value="مؤكد">مؤكد</option>
-                    <option value="قادم">قادم</option>
-                    <option value="تم التصوير">تم التصوير</option>
-                    <option value="جاري التجهيز">جاري التجهيز</option>
-                    <option value="جاهز">جاهز</option>
-                    <option value="تم التسليم">تم التسليم</option>
-                    <option value="ملغي">ملغي</option>
-                  </select>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  حالة الحجز الكلية (تلقائياً):
+                </label>
+                <div className={`w-full text-sm font-black p-2.5 rounded-xl border ${remaining === 0 && price > 0 ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-amber-50 border-amber-200 text-amber-700"}`}>
+                  {remaining === 0 && price > 0
+                    ? "مدفوع بالكامل"
+                    : `لسه باقي ${formatCurrency(remaining)}`}
                 </div>
-              )}
+              </div>
 
               {/* Assigned Staff */}
               {canViewStaff && (
