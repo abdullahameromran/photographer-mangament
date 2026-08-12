@@ -1,0 +1,6 @@
+{
+  "name": "نظام إدارة حجوزات التصوير",
+  "description": "نظام شامل لإدارة حجوزات واستوديو التصوير الفوتوغرافي، الطباعة، الحسابات المالية، وصلاحيات المساعدين والمستخدمين بالحقول.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
