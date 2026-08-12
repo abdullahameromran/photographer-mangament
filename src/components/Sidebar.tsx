@@ -14,11 +14,7 @@ import {
   CheckCircle2,
   X,
   Sparkles,
-  LayoutGrid,
-  Columns3,
-  Table as TableIcon,
   RotateCcw,
-  Sliders,
   Award,
 } from 'lucide-react';
 import { canPerformAction } from '../utils/permissions';
@@ -34,8 +30,6 @@ interface SidebarProps {
   onSearchChange: (q: string) => void;
   totalBookingsCount: number;
   printingJobsCount: number;
-  viewMode: 'cards' | 'kanban' | 'table';
-  onViewModeChange: (mode: 'cards' | 'kanban' | 'table') => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -49,8 +43,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSearchChange,
   totalBookingsCount,
   printingJobsCount,
-  viewMode,
-  onViewModeChange,
 }) => {
   const canCreate = canPerformAction(currentUser, 'createBooking');
 
@@ -272,53 +264,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             </nav>
           </div>
-
-          {/* Display Mode (if Bookings tab active) */}
-          {activeTab === 'bookings' && (
-            <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-800">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
-                <span>وضع عرض الحجوزات</span>
-                <Sliders className="w-3 h-3 text-blue-400" />
-              </div>
-              <div className="grid grid-cols-3 gap-1.5">
-                <button
-                  onClick={() => onViewModeChange('cards')}
-                  className={`flex flex-col items-center justify-center p-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    viewMode === 'cards'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-slate-800 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <LayoutGrid className="w-4 h-4 mb-1" />
-                  <span>بطاقات</span>
-                </button>
-
-                <button
-                  onClick={() => onViewModeChange('kanban')}
-                  className={`flex flex-col items-center justify-center p-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    viewMode === 'kanban'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-slate-800 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Columns3 className="w-4 h-4 mb-1" />
-                  <span>كانبان</span>
-                </button>
-
-                <button
-                  onClick={() => onViewModeChange('table')}
-                  className={`flex flex-col items-center justify-center p-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    viewMode === 'table'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-slate-800 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <TableIcon className="w-4 h-4 mb-1" />
-                  <span>جدول</span>
-                </button>
-              </div>
-            </div>
-          )}
 
         </div>
 

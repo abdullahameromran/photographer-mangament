@@ -40,18 +40,6 @@ interface BookingCardProps {
   onPrintStatusChange: (bookingId: string, newPrintStatus: PrintStatus) => void;
 }
 
-const STATUS_COLOR_MAP: Record<BookingStatus, { bg: string; text: string; border: string }> = {
-  جديد: { bg: 'bg-blue-500/10', text: 'text-blue-700', border: 'border-blue-500/30' },
-  'في انتظار العربون': { bg: 'bg-amber-500/10', text: 'text-amber-700', border: 'border-amber-500/30' },
-  مؤكد: { bg: 'bg-emerald-500/10', text: 'text-emerald-700', border: 'border-emerald-500/30' },
-  قادم: { bg: 'bg-purple-500/10', text: 'text-purple-700', border: 'border-purple-500/30' },
-  'تم التصوير': { bg: 'bg-indigo-500/10', text: 'text-indigo-700', border: 'border-indigo-500/30' },
-  'جاري التجهيز': { bg: 'bg-cyan-500/10', text: 'text-cyan-700', border: 'border-cyan-500/30' },
-  جاهز: { bg: 'bg-teal-500/10', text: 'text-teal-700', border: 'border-teal-500/30' },
-  'تم التسليم': { bg: 'bg-slate-500/10', text: 'text-slate-700', border: 'border-slate-500/30' },
-  ملغي: { bg: 'bg-red-500/10', text: 'text-red-700', border: 'border-red-500/30' },
-};
-
 const PRINT_STATUS_MAP: Record<PrintStatus, { bg: string; text: string }> = {
   'لم تبدأ': { bg: 'bg-slate-100 text-slate-700', text: 'لم تبدأ' },
   'جاري التجهيز': { bg: 'bg-amber-100 text-amber-800', text: 'جاري التجهيز' },
@@ -66,7 +54,6 @@ export const BookingCard: React.FC<BookingCardProps> = ({
   onView,
   onEdit,
   onDelete,
-  onStatusChange,
   onPrintStatusChange,
 }) => {
   // Permission checks
@@ -86,7 +73,6 @@ export const BookingCard: React.FC<BookingCardProps> = ({
 
   const canEditBooking = canPerformAction(currentUser, 'editBooking');
   const canDeleteBooking = canPerformAction(currentUser, 'deleteBooking');
-  const canChangeStatus = canPerformAction(currentUser, 'changeStatus') && canEditField(currentUser, 'status');
   const canEditPrint = canEditField(currentUser, 'printSettings');
 
   // Calculate financials
@@ -110,8 +96,6 @@ export const BookingCard: React.FC<BookingCardProps> = ({
       printItemsList.push(`صور كروت (${booking.printOptions.photoCardsCount || 0} صورة)`);
     }
   }
-
-  const statusStyle = STATUS_COLOR_MAP[booking.status] || STATUS_COLOR_MAP['جديد'];
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col group">
@@ -147,34 +131,12 @@ export const BookingCard: React.FC<BookingCardProps> = ({
           )}
         </div>
 
-        {/* Status Dropdown / Badge */}
+        {/* Automatic financial status */}
         <div>
           {viewStatus && (
-            <div className="relative">
-              {canChangeStatus ? (
-                <select
-                  value={booking.status}
-                  onChange={(e) => onStatusChange(booking.id, e.target.value as BookingStatus)}
-                  className={`text-xs font-bold px-3 py-1 rounded-full border ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border} focus:outline-none cursor-pointer`}
-                >
-                  <option value="جديد">جديد</option>
-                  <option value="في انتظار العربون">في انتظار العربون</option>
-                  <option value="مؤكد">مؤكد</option>
-                  <option value="قادم">قادم</option>
-                  <option value="تم التصوير">تم التصوير</option>
-                  <option value="جاري التجهيز">جاري التجهيز</option>
-                  <option value="جاهز">جاهز</option>
-                  <option value="تم التسليم">تم التسليم</option>
-                  <option value="ملغي">ملغي</option>
-                </select>
-              ) : (
-                <span
-                  className={`inline-block text-xs font-bold px-3 py-1 rounded-full border ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
-                >
-                  {booking.status}
-                </span>
-              )}
-            </div>
+            <span className={`inline-block text-xs font-bold px-3 py-1 rounded-full border ${remaining === 0 && price > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+              {remaining === 0 && price > 0 ? 'مدفوع بالكامل' : 'غير مدفوع بالكامل'}
+            </span>
           )}
         </div>
       </div>

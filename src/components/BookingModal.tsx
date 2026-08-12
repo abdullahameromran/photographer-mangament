@@ -253,8 +253,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       });
     if (!Number.isFinite(price) || price < 0)
       errors.push("سعر الحجز يجب أن يكون رقماً موجباً.");
-    if (hasDeposit && (!Number.isFinite(depositAmount) || depositAmount <= 0))
-      errors.push("أدخل مبلغ عربون أكبر من صفر.");
+    if (hasDeposit && (!Number.isFinite(depositAmount) || depositAmount < 0))
+      errors.push("مبلغ العربون لا يمكن أن يكون أقل من صفر.");
     if (hasDeposit && depositAmount > price)
       errors.push("مبلغ العربون لا يمكن أن يزيد عن سعر الحجز.");
     if (mapUrl.trim()) {
@@ -633,7 +633,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                           Math.max(0, Math.trunc(Number(e.target.value))),
                         )
                       }
-                      placeholder="3000"
+                      placeholder="يمكن إدخال 0"
                       className="w-full text-sm font-bold text-emerald-400 bg-slate-800 p-2.5 rounded-lg border border-slate-700 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     />
                   </div>

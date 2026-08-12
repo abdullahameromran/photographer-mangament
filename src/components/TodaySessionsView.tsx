@@ -7,7 +7,6 @@ import {
   Phone,
   MessageCircle,
   UserCheck,
-  CheckCircle2,
   DollarSign,
   Printer,
   ChevronLeft,
@@ -18,8 +17,8 @@ import {
   CalendarDays,
   ExternalLink,
 } from 'lucide-react';
-import { formatTimeArabic, getPhoneUrl, getWhatsAppUrl } from '../utils/permissions';
-import { canViewField, canPerformAction } from '../utils/permissions';
+import { calculateFinancials, formatTimeArabic, getPhoneUrl, getWhatsAppUrl } from '../utils/permissions';
+import { canViewField } from '../utils/permissions';
 
 interface TodaySessionsViewProps {
   bookings: Booking[];
@@ -36,7 +35,6 @@ export const TodaySessionsView: React.FC<TodaySessionsViewProps> = ({
   allUsers,
   onEditBooking,
   onOpenCreateModalWithDate,
-  onStatusChange,
 }) => {
   // Use 2026-08-12 as base date if today in real time has no bookings, or default to current date
   const todayObj = new Date();
@@ -83,7 +81,6 @@ export const TodaySessionsView: React.FC<TodaySessionsViewProps> = ({
   // Permissions
   const canViewPrice = canViewField(currentUser, 'price');
   const canViewDeposit = canViewField(currentUser, 'depositAmount');
-  const canEditStatus = canPerformAction(currentUser, 'changeStatus');
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('ar-EG', { style: 'currency', currency: 'EGP', maximumFractionDigits: 0 }).format(
@@ -317,14 +314,14 @@ export const TodaySessionsView: React.FC<TodaySessionsViewProps> = ({
                     ))}
                     <span
                       className={`text-[11px] font-semibold px-2 py-0.5 rounded ${
-                        booking.status === 'مؤكد'
+                        calculateFinancials(booking.price, booking.hasDeposit, booking.depositAmount).remaining === 0 && booking.price > 0
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : booking.status === 'تم التصوير'
-                          ? 'bg-slate-800 text-white'
                           : 'bg-amber-50 text-amber-800 border border-amber-200'
                       }`}
                     >
-                      {booking.status}
+                      {calculateFinancials(booking.price, booking.hasDeposit, booking.depositAmount).remaining === 0 && booking.price > 0
+                        ? 'مدفوع بالكامل'
+                        : 'غير مدفوع بالكامل'}
                     </span>
                   </div>
 
@@ -415,17 +412,6 @@ export const TodaySessionsView: React.FC<TodaySessionsViewProps> = ({
 
                   {/* Actions Bar */}
                   <div className="flex items-center justify-between pt-1">
-                    {/* Quick status change */}
-                    {canEditStatus && booking.status !== 'تم التصوير' && (
-                      <button
-                        onClick={() => onStatusChange(booking.id, 'تم التصوير')}
-                        className="flex items-center gap-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>تعليم "تم التصوير"</span>
-                      </button>
-                    )}
-
                     <button
                       onClick={() => onEditBooking(booking)}
                       className="mr-auto flex items-center gap-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"

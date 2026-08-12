@@ -15,7 +15,7 @@ import {
   X,
   Search,
 } from 'lucide-react';
-import { canViewField, formatTimeArabic, getPhoneUrl, getWhatsAppUrl } from '../utils/permissions';
+import { calculateFinancials, canViewField, formatTimeArabic, getPhoneUrl, getWhatsAppUrl } from '../utils/permissions';
 
 interface CalendarViewProps {
   bookings: Booking[];
@@ -130,7 +130,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       b.phone.includes(searchQuery);
 
     const matchesType = typeFilter === 'all' || b.bookingTypes.includes(typeFilter as BookingType);
-    const matchesStatus = statusFilter === 'all' || b.status === statusFilter;
+    const financialStatus = calculateFinancials(b.price, b.hasDeposit, b.depositAmount).remaining === 0 && b.price > 0
+      ? 'مدفوع بالكامل'
+      : 'غير مدفوع بالكامل';
+    const matchesStatus = statusFilter === 'all' || financialStatus === statusFilter;
 
     return matchesSearch && matchesType && matchesStatus;
   });
@@ -297,11 +300,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 font-semibold"
         >
           <option value="all">كل الحالات</option>
-          <option value="مؤكد">مؤكد</option>
-          <option value="قادم">قادم</option>
-          <option value="تم التصوير">تم التصوير</option>
-          <option value="في انتظار العربون">في انتظار العربون</option>
-          <option value="جديد">جديد</option>
+          <option value="مدفوع بالكامل">مدفوع بالكامل</option>
+          <option value="غير مدفوع بالكامل">غير مدفوع بالكامل</option>
         </select>
       </div>
 

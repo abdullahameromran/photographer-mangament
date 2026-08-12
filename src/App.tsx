@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Booking, BookingStatus, PrintStatus } from './types';
-import { filterBookingsForUser, canPerformAction } from './utils/permissions';
+import { filterBookingsForUser, canPerformAction, calculateFinancials } from './utils/permissions';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { BookingCard } from './components/BookingCard';
@@ -94,7 +94,10 @@ export default function App() {
       b.phone.includes(searchQuery) ||
       b.location.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesStatus = statusFilter === 'all' || b.status === statusFilter;
+    const financialStatus = calculateFinancials(b.price, b.hasDeposit, b.depositAmount).remaining === 0 && b.price > 0
+      ? 'مدفوع بالكامل'
+      : 'غير مدفوع بالكامل';
+    const matchesStatus = statusFilter === 'all' || financialStatus === statusFilter;
     const matchesType = typeFilter === 'all' || b.bookingTypes.includes(typeFilter as any);
 
     return matchesSearch && matchesStatus && matchesType;
@@ -276,8 +279,6 @@ export default function App() {
         onSearchChange={setSearchQuery}
         totalBookingsCount={accessibleBookings.length}
         printingJobsCount={printJobsCount}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
       />
 
       {/* Main Studio Content Area */}
@@ -334,47 +335,25 @@ export default function App() {
                 </button>
 
                 <button
-                  onClick={() => setStatusFilter('مؤكد')}
+                  onClick={() => setStatusFilter('مدفوع بالكامل')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
-                    statusFilter === 'مؤكد'
+                    statusFilter === 'مدفوع بالكامل'
                       ? 'bg-emerald-600 text-white font-bold'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  مؤكد
+                  مدفوع بالكامل
                 </button>
 
                 <button
-                  onClick={() => setStatusFilter('في انتظار العربون')}
+                  onClick={() => setStatusFilter('غير مدفوع بالكامل')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
-                    statusFilter === 'في انتظار العربون'
+                    statusFilter === 'غير مدفوع بالكامل'
                       ? 'bg-amber-600 text-white font-bold'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  في انتظار العربون
-                </button>
-
-                <button
-                  onClick={() => setStatusFilter('تم التصوير')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
-                    statusFilter === 'تم التصوير'
-                      ? 'bg-slate-800 text-white font-bold'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  تم التصوير
-                </button>
-
-                <button
-                  onClick={() => setStatusFilter('تم التسليم')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
-                    statusFilter === 'تم التسليم'
-                      ? 'bg-slate-900 text-white font-bold'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  تم التسليم
+                  غير مدفوع بالكامل
                 </button>
               </div>
 
