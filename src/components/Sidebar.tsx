@@ -16,6 +16,7 @@ import {
   Sparkles,
   RotateCcw,
   Award,
+  WalletCards,
 } from 'lucide-react';
 import { canPerformAction } from '../utils/permissions';
 
@@ -23,8 +24,8 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: User;
-  activeTab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'users' | 'stats' | 'account';
-  onTabChange: (tab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'users' | 'stats' | 'account') => void;
+  activeTab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'clients' | 'users' | 'stats' | 'account';
+  onTabChange: (tab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'clients' | 'users' | 'stats' | 'account') => void;
   onOpenCreateModal: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -220,6 +221,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {printingJobsCount}
                   </span>
                 )}
+              </button>
+
+              {/* Users & Permissions (Admin Only) */}
+              <button
+                onClick={() => {
+                  onTabChange('clients');
+                  onClose();
+                }}
+                className={`w-full flex items-center justify-between p-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === 'clients'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <WalletCards className="w-4 h-4 text-emerald-400" />
+                  <span>حسابات العملاء</span>
+                </div>
               </button>
 
               {/* Users & Permissions (Admin Only) */}
