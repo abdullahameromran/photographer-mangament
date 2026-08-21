@@ -459,6 +459,16 @@ export function SubscriptionExpired({ pending = false }: { pending?: boolean }) 
           >
             <Phone /> <span dir="ltr">{contact}</span>
           </a>
+          <button
+            type="button"
+            onClick={() => {
+              authApi.signOut();
+              window.location.href = "/login";
+            }}
+            className="sm:col-span-2 rounded-xl border border-slate-700 bg-slate-900 p-3 font-black text-slate-200 transition hover:border-rose-400/60 hover:bg-rose-500/10 hover:text-rose-300 flex items-center justify-center gap-2"
+          >
+            <LogOut className="w-5 h-5" /> تسجيل الخروج
+          </button>
         </div>
       </div>
     </div>
