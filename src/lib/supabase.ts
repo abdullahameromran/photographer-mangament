@@ -601,8 +601,14 @@ export interface Subscriber {
   enabled: boolean;
   notes?: string;
   profiles?:
-    | { full_name: string; job_title?: string; phone?: string }
-    | Array<{ full_name: string; job_title?: string; phone?: string }>;
+    | { full_name: string; job_title?: string; phone?: string; email?: string }
+    | Array<{ full_name: string; job_title?: string; phone?: string; email?: string }>;
+}
+export interface SubscriberDetails {
+  profile: { id: string; full_name: string; email?: string; phone?: string; job_title?: string; status: string; created_at: string; studio_id?: string; studio_name?: string };
+  subscription: { plan_code: Subscriber['plan_code']; starts_at: string; expires_at: string; enabled: boolean; notes?: string };
+  summary: { bookings_count: number; total_price: number; total_paid: number; total_remaining: number };
+  bookings: Array<{ id: string; title?: string; customer_name: string; customer_phone?: string; booking_date: string; start_time?: string; end_time?: string; location?: string; price: number; paid: number; remaining: number; payment_status: string; status: string; created_at: string }>;
 }
 export interface PendingSignup {
   user_id: string;
@@ -628,7 +634,7 @@ export const subscriptionApi = {
   },
   async list() {
     return (await rest(
-      "subscriptions?select=*,profiles(full_name,job_title,phone)&order=created_at.desc",
+      "subscriptions?select=*,profiles(full_name,job_title,phone,email)&order=created_at.desc",
     )) as Subscriber[];
   },
   async listPending() {
@@ -641,17 +647,20 @@ export const subscriptionApi = {
       // Compatibility path for projects where PostgREST has not refreshed the
       // new RPC yet. Self-service signups are created as Member profiles.
       try {
-        const [profiles, subscriptions] = await Promise.all([
-          rest("profiles?select=id,full_name,phone,created_at,job_title&job_title=eq.Member&order=created_at.desc"),
-          rest("subscriptions?select=user_id"),
-        ]);
+        let profiles;
+        try {
+          profiles = await rest("profiles?select=id,full_name,email,phone,created_at,job_title&job_title=eq.Member&order=created_at.desc");
+        } catch {
+          profiles = await rest("profiles?select=id,full_name,phone,created_at,job_title&job_title=eq.Member&order=created_at.desc");
+        }
+        const subscriptions = await rest("subscriptions?select=user_id");
         const subscribed = new Set(subscriptions.map((item: { user_id: string }) => item.user_id));
         return profiles
           .filter((profile: { id: string }) => !subscribed.has(profile.id))
-          .map((profile: { id: string; full_name?: string; phone?: string; created_at: string }) => ({
+          .map((profile: { id: string; full_name?: string; email?: string; phone?: string; created_at: string }) => ({
             user_id: profile.id,
             full_name: profile.full_name || "مشترك بدون اسم",
-            email: "",
+            email: profile.email || "",
             phone: profile.phone || "",
             created_at: profile.created_at,
           })) as PendingSignup[];
@@ -667,6 +676,12 @@ export const subscriptionApi = {
       method: "POST",
       body: JSON.stringify({ p_user: userId, p_plan: plan }),
     });
+  },
+  async details(userId: string) {
+    return (await rest("rpc/get_subscriber_details", {
+      method: "POST",
+      body: JSON.stringify({ p_user: userId }),
+    })) as SubscriberDetails;
   },
   async create(input: {
     name: string;

@@ -3,6 +3,7 @@ import {
   CalendarClock,
   CheckCircle2,
   Clock3,
+  Eye,
   KeyRound,
   LoaderCircle,
   LogOut,
@@ -12,10 +13,12 @@ import {
   RefreshCw,
   ShieldCheck,
   UserRound,
+  MapPin,
+  X,
   XCircle,
 } from "lucide-react";
-import { authApi, PendingSignup, Subscriber, subscriptionApi } from "../lib/supabase";
-import { getPhoneUrl, getWhatsAppUrl } from "../utils/permissions";
+import { authApi, PendingSignup, Subscriber, SubscriberDetails, subscriptionApi } from "../lib/supabase";
+import { formatCurrency, getPhoneUrl, getWhatsAppUrl } from "../utils/permissions";
 
 const contact = "201554670453";
 const platformAdminEmail = "admin@studioflow.app";
@@ -34,6 +37,7 @@ const profilePhone = (s: Subscriber) => {
   const p = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
   return p?.phone || "";
 };
+const bookingStatus: Record<string, string> = { new: 'جديد', waiting_deposit: 'في انتظار العربون', confirmed: 'مؤكد', upcoming: 'قادم', photographed: 'تم التصوير', preparing: 'جاري التجهيز', ready: 'جاهز', delivered: 'تم التسليم', cancelled: 'ملغي' };
 
 export function SuperAdminPage() {
   const [allowed, setAllowed] = useState<boolean | null>(null);
@@ -41,6 +45,8 @@ export function SuperAdminPage() {
   const [pending, setPending] = useState<PendingSignup[]>([]);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [details, setDetails] = useState<SubscriberDetails | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     name: "",
@@ -269,6 +275,7 @@ export function SuperAdminPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    <button onClick={async () => { setDetailsLoading(true); setError(''); try { setDetails(await subscriptionApi.details(s.user_id)); } catch (e) { setError(e instanceof Error ? e.message : 'تعذر تحميل التفاصيل'); } finally { setDetailsLoading(false); } }} disabled={detailsLoading} className="px-3 py-2 bg-violet-50 text-violet-700 rounded-lg text-xs font-black flex items-center gap-1.5"><Eye className="w-4 h-4" /> عرض التفاصيل</button>
                     {profilePhone(s) && (
                       <>
                         <a href={getPhoneUrl(profilePhone(s))} title="اتصال" className="p-2 bg-blue-50 text-blue-700 rounded-lg"><Phone className="w-4 h-4" /></a>
@@ -393,6 +400,31 @@ export function SuperAdminPage() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+      {details && (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm grid place-items-center p-3 sm:p-5" onMouseDown={(e) => { if (e.target === e.currentTarget) setDetails(null); }}>
+          <div className="bg-slate-50 rounded-3xl w-full max-w-5xl max-h-[92vh] overflow-hidden shadow-2xl flex flex-col">
+            <div className="bg-slate-950 text-white p-5 sm:p-6 flex items-start justify-between gap-4">
+              <div><div className="flex items-center gap-2"><span className="w-10 h-10 rounded-xl bg-violet-600 grid place-items-center"><UserRound className="w-5 h-5" /></span><div><h2 className="text-xl font-black">{details.profile.full_name}</h2><p className="text-xs text-slate-400">{details.profile.studio_name || 'استوديو بدون اسم'}</p></div></div></div>
+              <button onClick={() => setDetails(null)} className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700" aria-label="إغلاق"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="overflow-y-auto p-4 sm:p-6 space-y-5">
+              <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {[['البريد الإلكتروني', details.profile.email || 'غير مسجل'], ['رقم الهاتف', details.profile.phone || 'غير مسجل'], ['الباقة', plans[details.subscription.plan_code].label], ['حالة الحساب', details.subscription.enabled ? 'نشط' : 'موقوف']].map(([label,value]) => <div key={label} className="bg-white border border-slate-200 rounded-2xl p-4"><span className="text-[10px] font-bold text-slate-400 block mb-1">{label}</span><b className="text-sm break-all" dir={label === 'البريد الإلكتروني' || label === 'رقم الهاتف' ? 'ltr' : 'rtl'}>{value}</b></div>)}
+              </section>
+              <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {[['عدد الحجوزات', Number(details.summary.bookings_count).toLocaleString('ar-EG')], ['إجمالي الحجوزات', formatCurrency(Number(details.summary.total_price))], ['إجمالي المدفوع', formatCurrency(Number(details.summary.total_paid))], ['إجمالي المتبقي', formatCurrency(Number(details.summary.total_remaining))]].map(([label,value], index) => <div key={label} className={`rounded-2xl p-4 border ${index === 2 ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : index === 3 ? 'bg-amber-50 border-amber-100 text-amber-800' : 'bg-white border-slate-200'}`}><span className="text-[10px] font-bold opacity-70 block mb-1">{label}</span><b className="text-lg">{value}</b></div>)}
+              </section>
+              <section className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                <div className="p-4 border-b border-slate-100 flex items-center justify-between"><div><h3 className="font-black">مواعيد وحجوزات الاستوديو</h3><p className="text-xs text-slate-400 mt-1">كل الحجوزات التي سجلها هذا المشترك وفريقه</p></div><CalendarClock className="text-blue-600" /></div>
+                <div className="hidden md:block overflow-x-auto"><table className="w-full min-w-[800px] text-right text-xs"><thead className="bg-slate-50 text-slate-500"><tr><th className="p-3">الموعد</th><th className="p-3">الحجز والعميل</th><th className="p-3">المكان</th><th className="p-3">الإجمالي</th><th className="p-3">المدفوع</th><th className="p-3">المتبقي</th><th className="p-3">الحالة</th></tr></thead><tbody className="divide-y divide-slate-100">{details.bookings.map(b => <tr key={b.id}><td className="p-3 whitespace-nowrap font-bold">{new Date(`${b.booking_date}T12:00:00`).toLocaleDateString('ar-EG')}<small className="block text-slate-400 mt-1" dir="ltr">{b.start_time?.slice(0,5) || '—'}</small></td><td className="p-3"><b className="block">{b.title || b.customer_name}</b><span className="text-slate-400">{b.customer_name}{b.customer_phone ? ` • ${b.customer_phone}` : ''}</span></td><td className="p-3 text-slate-500">{b.location || '—'}</td><td className="p-3 font-bold">{formatCurrency(Number(b.price))}</td><td className="p-3 font-bold text-emerald-600">{formatCurrency(Number(b.paid))}</td><td className="p-3 font-bold text-amber-600">{formatCurrency(Number(b.remaining))}</td><td className="p-3"><span className="rounded-full bg-blue-50 text-blue-700 px-2 py-1 font-bold">{bookingStatus[b.status] || b.status}</span></td></tr>)}</tbody></table></div>
+                <div className="divide-y divide-slate-100 md:hidden">{details.bookings.map(b => <article key={b.id} className="p-4"><div className="flex justify-between gap-3"><div><b>{b.title || b.customer_name}</b><p className="text-xs text-slate-400 mt-1">{b.customer_name}</p></div><span className="text-xs font-bold whitespace-nowrap">{new Date(`${b.booking_date}T12:00:00`).toLocaleDateString('ar-EG')}</span></div>{b.location && <p className="mt-3 flex items-center gap-1 text-xs text-slate-500"><MapPin className="w-3.5 h-3.5" />{b.location}</p>}<div className="grid grid-cols-3 gap-2 mt-3 text-center"><div className="bg-slate-50 rounded-lg p-2"><small className="block text-slate-400">الإجمالي</small><b className="text-xs">{formatCurrency(Number(b.price))}</b></div><div className="bg-emerald-50 rounded-lg p-2 text-emerald-700"><small className="block">المدفوع</small><b className="text-xs">{formatCurrency(Number(b.paid))}</b></div><div className="bg-amber-50 rounded-lg p-2 text-amber-700"><small className="block">المتبقي</small><b className="text-xs">{formatCurrency(Number(b.remaining))}</b></div></div></article>)}</div>
+                {!details.bookings.length && <div className="p-12 text-center text-slate-400 text-sm">لم يسجل هذا المشترك أي حجوزات حتى الآن</div>}
+              </section>
+              <div className="text-xs text-slate-500 flex flex-wrap gap-x-6 gap-y-2"><span>بداية الاشتراك: <b>{new Date(details.subscription.starts_at).toLocaleDateString('ar-EG')}</b></span><span>نهاية الاشتراك: <b>{new Date(details.subscription.expires_at).toLocaleDateString('ar-EG')}</b></span><span>تاريخ إنشاء الحساب: <b>{new Date(details.profile.created_at).toLocaleDateString('ar-EG')}</b></span></div>
+            </div>
+          </div>
         </div>
       )}
     </div>
