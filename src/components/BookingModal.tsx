@@ -71,15 +71,14 @@ const timeToMinutes = (value: string) => {
 };
 
 // When the end is earlier on the clock, it belongs to the following day.
-// A maximum of 18 hours catches accidental reversed inputs while supporting
-// evening events that finish after midnight.
+// The booking date always remains its starting date.
 const isValidTimeRange = (start: string, end: string) => {
   if (!start || !end || start === end) return false;
   const startMinutes = timeToMinutes(start);
   let endMinutes = timeToMinutes(end);
   if (endMinutes < startMinutes) endMinutes += 24 * 60;
   const duration = endMinutes - startMinutes;
-  return duration > 0 && duration <= 18 * 60;
+  return duration > 0;
 };
 
 export const BookingModal: React.FC<BookingModalProps> = ({
@@ -270,14 +269,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       );
     if (!date) errors.push("اختر تاريخ الحجز.");
     if (startTime && endTime && !isValidTimeRange(startTime, endTime))
-      errors.push("وقت النهاية غير صحيح. يمكن أن ينتهي الحجز بعد منتصف الليل بحد أقصى 18 ساعة.");
+      errors.push("وقت النهاية يجب أن يختلف عن وقت البداية.");
     if (separateSchedules)
       bookingTypes.forEach((type) => {
         const schedule = typeSchedules[type] || { date, startTime, endTime };
         if (!schedule.date || !schedule.startTime || !schedule.endTime)
           errors.push(`أكمل تاريخ ووقت ${type}.`);
         else if (!isValidTimeRange(schedule.startTime, schedule.endTime))
-          errors.push(`وقت نهاية ${type} غير صحيح. يمكن أن يكون في اليوم التالي بحد أقصى 18 ساعة.`);
+          errors.push(`وقت نهاية ${type} يجب أن يختلف عن وقت البداية.`);
       });
     if (!Number.isFinite(price) || price < 0)
       errors.push("سعر الحجز يجب أن يكون رقماً موجباً.");
@@ -561,7 +560,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   </div>
                   {startTime && endTime && endTime < startTime && (
                     <p className="col-span-2 flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-2 text-[11px] font-bold text-blue-700">
-                      <Clock className="h-3.5 w-3.5" /> وقت النهاية سيُحسب في اليوم التالي.
+                      <Clock className="h-3.5 w-3.5" /> ينتهي صباح اليوم التالي، وسيظل الحجز محسوبًا ضمن تاريخ بدايته.
                     </p>
                   )}
                 </div>
