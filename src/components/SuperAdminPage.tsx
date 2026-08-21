@@ -22,6 +22,7 @@ import { formatCurrency, getPhoneUrl, getWhatsAppUrl } from "../utils/permission
 
 const contact = "201554670453";
 const platformAdminEmail = "admin@studioflow.app";
+const facebookPage = "https://www.facebook.com/profile.php?id=61593185351334";
 const plans = {
   trial: { label: "تجربة مجانية 7 أيام", price: 0 },
   monthly: { label: "شهر", price: 200 },
@@ -445,13 +446,12 @@ export function SubscriptionExpired({ pending = false }: { pending?: boolean }) 
         </p>
         <div className="grid sm:grid-cols-2 gap-3 mt-7">
           <a
-            href={getWhatsAppUrl(
-              contact,
-              "مرحباً، أريد تجديد اشتراكي في نظام إدارة الاستديو.",
-            )}
-            className="bg-emerald-500 rounded-xl p-3 font-black flex justify-center gap-2"
+            href={facebookPage}
+            target="_blank"
+            rel="noreferrer"
+            className="bg-[#1877F2] rounded-xl p-3 font-black flex justify-center gap-2"
           >
-            <MessageCircle /> واتساب
+            <MessageCircle /> تواصل مع الإدارة عبر فيسبوك
           </a>
           <a
             href={getPhoneUrl(contact)}

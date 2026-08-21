@@ -17,6 +17,7 @@ import {
   RotateCcw,
   Award,
   WalletCards,
+  BadgeCheck,
 } from 'lucide-react';
 import { canPerformAction } from '../utils/permissions';
 
@@ -24,8 +25,8 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: User;
-  activeTab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'clients' | 'users' | 'stats' | 'account';
-  onTabChange: (tab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'clients' | 'users' | 'stats' | 'account') => void;
+  activeTab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'clients' | 'subscription' | 'users' | 'stats' | 'account';
+  onTabChange: (tab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'clients' | 'subscription' | 'users' | 'stats' | 'account') => void;
   onOpenCreateModal: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -221,6 +222,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {printingJobsCount}
                   </span>
                 )}
+              </button>
+
+              {/* Users & Permissions (Admin Only) */}
+              <button onClick={() => { onTabChange('subscription'); onClose(); }} className={`w-full flex items-center justify-between p-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === 'subscription' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
+                <div className="flex items-center gap-3"><BadgeCheck className="w-4 h-4 text-violet-400" /><span>الاشتراك والباقات</span></div>
               </button>
 
               {/* Users & Permissions (Admin Only) */}

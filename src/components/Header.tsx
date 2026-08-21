@@ -20,8 +20,8 @@ import { NotificationReminders } from './NotificationReminders';
 
 interface HeaderProps {
   currentUser: User;
-  activeTab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'clients' | 'users' | 'stats' | 'account';
-  onTabChange: (tab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'clients' | 'users' | 'stats' | 'account') => void;
+  activeTab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'clients' | 'subscription' | 'users' | 'stats' | 'account';
+  onTabChange: (tab: 'bookings' | 'upcoming' | 'calendar' | 'printing' | 'clients' | 'subscription' | 'users' | 'stats' | 'account') => void;
   onOpenCreateModal: () => void;
   onOpenSidebar: () => void;
   searchQuery: string;

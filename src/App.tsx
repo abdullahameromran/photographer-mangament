@@ -17,6 +17,7 @@ import { TodaySessionsView } from './components/TodaySessionsView';
 import { CalendarView } from './components/CalendarView';
 import { AccountPage } from './components/AccountPage';
 import { ClientAccounts } from './components/ClientAccounts';
+import { SubscriptionPage } from './components/SubscriptionPage';
 import {
   Plus,
   Filter,
@@ -55,7 +56,7 @@ export default function App() {
 
   // Navigation & View Mode
   const [activeTab, setActiveTab] = useState<
-    'bookings' | 'upcoming' | 'calendar' | 'printing' | 'clients' | 'users' | 'stats' | 'account'
+    'bookings' | 'upcoming' | 'calendar' | 'printing' | 'clients' | 'subscription' | 'users' | 'stats' | 'account'
   >('bookings');
 
   // Filters & Search
@@ -433,6 +434,7 @@ export default function App() {
         {activeTab === 'clients' && (
           <ClientAccounts bookings={accessibleBookings} currentUser={currentUser} />
         )}
+        {activeTab === 'subscription' && <SubscriptionPage users={users} />}
 
         {/* Tab 3: Users & Granular Field Permissions */}
         {activeTab === 'users' && currentUser.isSystemAdmin && (
