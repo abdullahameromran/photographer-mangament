@@ -629,8 +629,17 @@ export const subscriptionApi = {
     if (!isSupabaseConfigured) return null;
     const id = authApi.currentUser()?.id;
     if (!id) return null;
-    const rows = await rest(`subscriptions?user_id=eq.${id}&select=*`);
-    return (rows[0] || null) as Subscriber | null;
+    try {
+      const rows = await rest("rpc/current_effective_subscription", {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      return (rows[0] || null) as Subscriber | null;
+    } catch {
+      // Keep owner accounts working until migration 16 is applied.
+      const rows = await rest(`subscriptions?user_id=eq.${id}&select=*`);
+      return (rows[0] || null) as Subscriber | null;
+    }
   },
   async list() {
     return (await rest(
