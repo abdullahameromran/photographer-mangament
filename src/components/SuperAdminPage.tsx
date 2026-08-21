@@ -14,10 +14,11 @@ import {
   UserRound,
   XCircle,
 } from "lucide-react";
-import { authApi, Subscriber, subscriptionApi } from "../lib/supabase";
+import { authApi, PendingSignup, Subscriber, subscriptionApi } from "../lib/supabase";
 import { getPhoneUrl, getWhatsAppUrl } from "../utils/permissions";
 
 const contact = "201554670453";
+const platformAdminEmail = "admin@studioflow.app";
 const plans = {
   trial: { label: "تجربة مجانية 7 أيام", price: 0 },
   monthly: { label: "شهر", price: 200 },
@@ -37,6 +38,7 @@ const profilePhone = (s: Subscriber) => {
 export function SuperAdminPage() {
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [rows, setRows] = useState<Subscriber[]>([]);
+  const [pending, setPending] = useState<PendingSignup[]>([]);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -49,10 +51,19 @@ export function SuperAdminPage() {
   });
   const load = async () => {
     setAllowed(null);
+    setError("");
     try {
       const ok = await subscriptionApi.isSuperAdmin();
       setAllowed(ok);
-      if (ok) setRows(await subscriptionApi.list());
+      if (ok) {
+        setRows(await subscriptionApi.list());
+        try {
+          setPending(await subscriptionApi.listPending());
+        } catch (pendingError) {
+          setPending([]);
+          setError(`تعذر تحميل طلبات التسجيل: ${pendingError instanceof Error ? pendingError.message : "خطأ غير معروف"}`);
+        }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "تعذر التحميل");
       setAllowed(false);
@@ -98,7 +109,9 @@ export function SuperAdminPage() {
           <ShieldCheck className="w-14 h-14 text-rose-400 mx-auto mb-5" />
           <h1 className="text-2xl font-black">صفحة خاصة بمدير النظام</h1>
             <p className="text-slate-400 text-sm leading-7 mt-3">
-              هذا الحساب غير مصرح له بإدارة المشتركين.
+              {authApi.currentUser()?.email.toLowerCase() === platformAdminEmail
+                ? "تم تسجيل الدخول بحساب مدير النظام، لكن ترقية قاعدة البيانات لهذا الحساب لم تُطبّق بعد. طبّق آخر ترحيلات Supabase ثم أعد تحميل الصفحة."
+                : "هذا الحساب غير مصرح له بإدارة المشتركين."}
             </p>
             <p dir="ltr" className="mt-3 text-xs font-bold text-slate-500 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2">
               {authApi.currentUser()?.email || "No active account"}
@@ -154,6 +167,7 @@ export function SuperAdminPage() {
         </div>
       </header>
       <main className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
+        {error && !open && <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-700"><span>{error}</span><button onClick={() => setError('')} className="shrink-0 rounded-lg p-1 hover:bg-rose-100" aria-label="إغلاق"><XCircle className="h-4 w-4" /></button></div>}
         <section className="grid grid-cols-3 gap-3">
           {[
             [rows.length, "كل المشتركين", UserRound, "blue"],
@@ -171,6 +185,35 @@ export function SuperAdminPage() {
               </span>
             </div>
           ))}
+        </section>
+        <section className="bg-white border border-amber-200 rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-amber-100 bg-amber-50/60 flex items-center justify-between gap-3">
+            <div><h2 className="font-black">طلبات التسجيل الجديدة</h2><p className="text-xs text-slate-500 mt-1">حسابات أنشأها العملاء وتنتظر اختيار الباقة والتفعيل</p></div>
+            <span className="min-w-8 h-8 px-2 rounded-full bg-amber-500 text-white grid place-items-center text-xs font-black">{pending.length}</span>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {pending.map((request) => (
+              <div key={request.user_id} className="p-4 sm:p-5 grid lg:grid-cols-[1fr_auto] gap-4 items-center">
+                <div className="flex gap-3 min-w-0">
+                  <span className="w-11 h-11 rounded-xl grid place-items-center shrink-0 bg-amber-50 text-amber-600"><Clock3 className="w-5 h-5" /></span>
+                  <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-black">{request.full_name}</h3><span className="text-[10px] px-2 py-1 rounded-full bg-amber-100 text-amber-700 font-black">بانتظار التفعيل</span></div>{request.email && <p className="text-xs text-slate-500 mt-1" dir="ltr">{request.email}</p>}{request.phone && <p className="text-xs text-slate-500 mt-1" dir="ltr">{request.phone}</p>}<p className="text-[10px] text-slate-400 mt-1">سجّل في {new Date(request.created_at).toLocaleString('ar-EG')}</p></div>
+                </div>
+                <div className="flex gap-2">
+                  <select id={`pending-plan-${request.user_id}`} defaultValue="quarterly" className="bg-slate-50 border border-slate-200 rounded-lg px-2 text-xs font-bold">
+                    <option value="trial">تجربة 7 أيام</option><option value="monthly">شهر</option><option value="quarterly">3 شهور</option><option value="yearly">سنة</option>
+                  </select>
+                  <button disabled={busy} onClick={async () => {
+                    const plan = (document.getElementById(`pending-plan-${request.user_id}`) as HTMLSelectElement).value as 'trial'|'monthly'|'quarterly'|'yearly';
+                    setBusy(true); setError('');
+                    try { await subscriptionApi.approve(request.user_id, plan); const [subscribers, requests] = await Promise.all([subscriptionApi.list(), subscriptionApi.listPending()]); setRows(subscribers); setPending(requests); }
+                    catch (e) { setError(e instanceof Error ? e.message : 'تعذر تفعيل الحساب'); }
+                    finally { setBusy(false); }
+                  }} className="px-4 py-2.5 bg-emerald-600 disabled:opacity-50 text-white rounded-lg text-xs font-black flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> تفعيل الاشتراك</button>
+                </div>
+              </div>
+            ))}
+            {!pending.length && <div className="p-8 text-center text-slate-400 text-sm">لا توجد طلبات تسجيل معلّقة</div>}
+          </div>
         </section>
         <section className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
           <div className="p-5 border-b border-slate-100 flex items-center justify-between">
@@ -356,7 +399,7 @@ export function SuperAdminPage() {
   );
 }
 
-export function SubscriptionExpired() {
+export function SubscriptionExpired({ pending = false }: { pending?: boolean }) {
   return (
     <div
       dir="rtl"
@@ -364,10 +407,9 @@ export function SubscriptionExpired() {
     >
       <div className="max-w-lg text-center">
         <Clock3 className="w-16 h-16 mx-auto text-amber-400 mb-5" />
-        <h1 className="text-3xl font-black">انتهت مدة الاشتراك</h1>
+        <h1 className="text-3xl font-black">{pending ? 'حسابك بانتظار التفعيل' : 'انتهت مدة الاشتراك'}</h1>
         <p className="text-slate-400 leading-8 mt-4">
-          تم إغلاق لوحة التحكم مؤقتاً. جدّد باقتك لتفعيل الحساب والوصول إلى
-          بيانات الاستديو مرة أخرى.
+          {pending ? 'تم إنشاء حسابك بنجاح وإرساله إلى الإدارة. ستتمكن من الدخول فور اختيار الباقة وتفعيل اشتراكك.' : 'تم إغلاق لوحة التحكم مؤقتاً. جدّد باقتك لتفعيل الحساب والوصول إلى بيانات الاستديو مرة أخرى.'}
         </p>
         <div className="grid sm:grid-cols-2 gap-3 mt-7">
           <a

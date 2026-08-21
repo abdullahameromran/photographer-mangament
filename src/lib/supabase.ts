@@ -604,6 +604,13 @@ export interface Subscriber {
     | { full_name: string; job_title?: string; phone?: string }
     | Array<{ full_name: string; job_title?: string; phone?: string }>;
 }
+export interface PendingSignup {
+  user_id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  created_at: string;
+}
 export const subscriptionApi = {
   async isSuperAdmin() {
     if (!isSupabaseConfigured) return false;
@@ -623,6 +630,43 @@ export const subscriptionApi = {
     return (await rest(
       "subscriptions?select=*,profiles(full_name,job_title,phone)&order=created_at.desc",
     )) as Subscriber[];
+  },
+  async listPending() {
+    try {
+      return (await rest("rpc/list_pending_signups", {
+        method: "POST",
+        body: JSON.stringify({}),
+      })) as PendingSignup[];
+    } catch (rpcError) {
+      // Compatibility path for projects where PostgREST has not refreshed the
+      // new RPC yet. Self-service signups are created as Member profiles.
+      try {
+        const [profiles, subscriptions] = await Promise.all([
+          rest("profiles?select=id,full_name,phone,created_at,job_title&job_title=eq.Member&order=created_at.desc"),
+          rest("subscriptions?select=user_id"),
+        ]);
+        const subscribed = new Set(subscriptions.map((item: { user_id: string }) => item.user_id));
+        return profiles
+          .filter((profile: { id: string }) => !subscribed.has(profile.id))
+          .map((profile: { id: string; full_name?: string; phone?: string; created_at: string }) => ({
+            user_id: profile.id,
+            full_name: profile.full_name || "مشترك بدون اسم",
+            email: "",
+            phone: profile.phone || "",
+            created_at: profile.created_at,
+          })) as PendingSignup[];
+      } catch (fallbackError) {
+        const rpcMessage = rpcError instanceof Error ? rpcError.message : "تعذر استدعاء دالة الطلبات";
+        const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : "تعذر قراءة الحسابات";
+        throw new Error(`${rpcMessage} — ${fallbackMessage}`);
+      }
+    }
+  },
+  async approve(userId: string, plan: "trial" | "monthly" | "quarterly" | "yearly") {
+    await rest("rpc/approve_signup", {
+      method: "POST",
+      body: JSON.stringify({ p_user: userId, p_plan: plan }),
+    });
   },
   async create(input: {
     name: string;
