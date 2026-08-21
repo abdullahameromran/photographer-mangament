@@ -65,6 +65,23 @@ const REMINDER_OPTIONS: ReminderOption[] = [
   "مخصص",
 ];
 
+const timeToMinutes = (value: string) => {
+  const [hours, minutes] = value.split(":").map(Number);
+  return hours * 60 + minutes;
+};
+
+// When the end is earlier on the clock, it belongs to the following day.
+// A maximum of 18 hours catches accidental reversed inputs while supporting
+// evening events that finish after midnight.
+const isValidTimeRange = (start: string, end: string) => {
+  if (!start || !end || start === end) return false;
+  const startMinutes = timeToMinutes(start);
+  let endMinutes = timeToMinutes(end);
+  if (endMinutes < startMinutes) endMinutes += 24 * 60;
+  const duration = endMinutes - startMinutes;
+  return duration > 0 && duration <= 18 * 60;
+};
+
 export const BookingModal: React.FC<BookingModalProps> = ({
   isOpen,
   onClose,
@@ -252,15 +269,15 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         "رقم الموبايل يجب أن يكون 11 رقماً مصرياً صحيحاً ويبدأ بـ 010 أو 011 أو 012 أو 015.",
       );
     if (!date) errors.push("اختر تاريخ الحجز.");
-    if (startTime && endTime && endTime <= startTime)
-      errors.push("وقت النهاية يجب أن يكون بعد وقت البداية.");
+    if (startTime && endTime && !isValidTimeRange(startTime, endTime))
+      errors.push("وقت النهاية غير صحيح. يمكن أن ينتهي الحجز بعد منتصف الليل بحد أقصى 18 ساعة.");
     if (separateSchedules)
       bookingTypes.forEach((type) => {
         const schedule = typeSchedules[type] || { date, startTime, endTime };
         if (!schedule.date || !schedule.startTime || !schedule.endTime)
           errors.push(`أكمل تاريخ ووقت ${type}.`);
-        else if (schedule.endTime <= schedule.startTime)
-          errors.push(`وقت نهاية ${type} يجب أن يكون بعد وقت البداية.`);
+        else if (!isValidTimeRange(schedule.startTime, schedule.endTime))
+          errors.push(`وقت نهاية ${type} غير صحيح. يمكن أن يكون في اليوم التالي بحد أقصى 18 ساعة.`);
       });
     if (!Number.isFinite(price) || price < 0)
       errors.push("سعر الحجز يجب أن يكون رقماً موجباً.");
@@ -542,6 +559,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       className="w-full text-sm bg-white p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 disabled:bg-slate-100 disabled:text-slate-500"
                     />
                   </div>
+                  {startTime && endTime && endTime < startTime && (
+                    <p className="col-span-2 flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-2 text-[11px] font-bold text-blue-700">
+                      <Clock className="h-3.5 w-3.5" /> وقت النهاية سيُحسب في اليوم التالي.
+                    </p>
+                  )}
                 </div>
               )}
 
