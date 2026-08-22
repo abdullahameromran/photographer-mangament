@@ -145,6 +145,8 @@ export default function App() {
         hasDeposit: bookingData.hasDeposit ?? false,
         depositAmount: bookingData.depositAmount || 0,
         depositReceiptUrl: bookingData.depositReceiptUrl || '',
+        addons: bookingData.addons || [],
+        expenses: bookingData.expenses || [],
         hasPrint: bookingData.hasPrint ?? false,
         printOptions: bookingData.printOptions || {
           largeCanvas: false,
@@ -154,6 +156,7 @@ export default function App() {
           photoCards: false,
           photoCardsCount: 0,
         },
+        customPrintItems: bookingData.customPrintItems || [],
         printStatus: bookingData.printStatus || 'لم تبدأ',
         reminder: bookingData.reminder || 'قبل يوم',
         assignedUserIds: bookingData.assignedUserIds || (authUser ? [authUser.id] : []),

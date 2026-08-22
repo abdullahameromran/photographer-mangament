@@ -251,6 +251,8 @@ const toBooking = (row: any): Booking => {
     hasDeposit: Boolean(row.deposit_paid),
     depositAmount: Number(row.deposit_amount || 0),
     depositReceiptUrl: row.deposit_receipt_url || "",
+    addons: Array.isArray(row.addons) ? row.addons : [],
+    expenses: Array.isArray(row.expenses) ? row.expenses : [],
     hasPrint: Boolean(printing?.has_printing),
     printOptions: {
       largeCanvas: Boolean(printing?.large_tableau),
@@ -260,6 +262,7 @@ const toBooking = (row: any): Booking => {
       photoCards: Boolean(printing?.card_photos),
       photoCardsCount: Number(printing?.card_photos_count || 0),
     },
+    customPrintItems: Array.isArray(row.custom_print_items) ? row.custom_print_items : [],
     printStatus: printFromDb[printing?.printing_status] || "لم تبدأ",
     reminder: reminderFromDb[reminder?.reminder_type] || "قبل يوم",
     assignedUserIds: (row.booking_assignees || []).map((a: any) => a.user_id),
@@ -288,6 +291,9 @@ const bookingRow = (b: Partial<Booking>) => ({
   deposit_paid: b.hasDeposit,
   deposit_amount: b.depositAmount,
   deposit_receipt_url: b.depositReceiptUrl || null,
+  addons: b.addons || [],
+  expenses: b.expenses || [],
+  custom_print_items: b.customPrintItems || [],
   ...(b.status ? { status: statusToDb[b.status] } : {}),
 });
 
@@ -445,6 +451,8 @@ const fieldMap: Partial<Record<FieldKey, string>> = {
   location: "location",
   price: "price",
   depositAmount: "deposit",
+  addons: "addons",
+  expenses: "expenses",
   remaining: "remaining",
   printSettings: "printing",
   notes: "notes",

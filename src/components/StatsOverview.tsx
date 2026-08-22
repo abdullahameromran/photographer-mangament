@@ -30,6 +30,7 @@ interface StatsOverviewProps {
 
 export const StatsOverview: React.FC<StatsOverviewProps> = ({ bookings, currentUser }) => {
   const canViewPrice = canViewField(currentUser, 'price');
+  const canViewExpenses = canViewField(currentUser, 'expenses');
 
   // Compute stats
   const totalBookings = bookings.length;
@@ -43,6 +44,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ bookings, currentU
   let totalRevenue = 0;
   let totalPaid = 0;
   let totalRemaining = 0;
+  let totalExpenses = 0;
 
   bookings.forEach((b) => {
     const { price, paid, remaining } = calculateFinancials(
@@ -53,6 +55,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ bookings, currentU
     totalRevenue += price;
     totalPaid += paid;
     totalRemaining += remaining;
+    totalExpenses += (b.expenses || []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
   });
 
   const averageBookingValue = totalBookings ? totalRevenue / totalBookings : 0;
@@ -168,7 +171,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ bookings, currentU
             <span>الإحصائيات المالية للحجوزات المتاحة:</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 ${canViewExpenses ? 'lg:grid-cols-5' : 'lg:grid-cols-3'} gap-4 relative z-10`}>
             <div className="bg-slate-800/90 p-4 rounded-lg border border-slate-700 text-center">
               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
                 إجمالي قيمة الحجوزات
@@ -195,6 +198,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ bookings, currentU
                 {formatCurrency(totalRemaining)}
               </span>
             </div>
+            {canViewExpenses && <><div className="bg-rose-950/40 p-4 rounded-lg border border-rose-900/70 text-center"><span className="text-[10px] text-rose-300 font-bold block mb-1">إجمالي المصروفات الداخلية</span><span className="text-xl font-bold text-rose-400">{formatCurrency(totalExpenses)}</span></div><div className="bg-emerald-950/40 p-4 rounded-lg border border-emerald-900/70 text-center"><span className="text-[10px] text-emerald-300 font-bold block mb-1">صافي الربح المتوقع</span><span className="text-xl font-black text-emerald-400">{formatCurrency(totalRevenue-totalExpenses)}</span></div></>}
           </div>
         </div>
       ) : (

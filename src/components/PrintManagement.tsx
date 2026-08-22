@@ -254,6 +254,12 @@ export const PrintManagement: React.FC<PrintManagementProps> = ({
                         </span>
                       )}
                     </div>
+                    {(b.customPrintItems || []).map((item) => (
+                      <div key={item.id} className="col-span-2 flex items-center justify-between rounded-xl border border-violet-200 bg-violet-50 p-2 font-bold text-violet-950">
+                        <span>{item.name}</span>
+                        <span className="rounded-full bg-violet-600 px-2 py-0.5 text-[10px] text-white">العدد: {item.quantity}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
 

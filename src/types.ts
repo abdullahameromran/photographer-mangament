@@ -45,6 +45,8 @@ export interface PrintOptions {
   photoCardsCount: number; // عدد الصور
 }
 export interface BookingTypeSchedule { type: BookingType; date: string; startTime: string; endTime: string; }
+export interface CustomLineItem { id: string; name: string; quantity: number; unitPrice: number; notes?: string; }
+export interface ExpenseItem { id: string; name: string; amount: number; notes?: string; }
 
 export interface Booking {
   id: string;
@@ -69,10 +71,13 @@ export interface Booking {
   hasDeposit: boolean;
   depositAmount: number;
   depositReceiptUrl?: string;
+  addons: CustomLineItem[];
+  expenses: ExpenseItem[];
 
   // Printing
   hasPrint: boolean;
   printOptions: PrintOptions;
+  customPrintItems: CustomLineItem[];
   printStatus: PrintStatus;
 
   // Reminder & Assignment
@@ -111,6 +116,8 @@ export type FieldKey =
   | 'depositAmount'
   | 'remaining'
   | 'paymentStatus'
+  | 'addons'
+  | 'expenses'
   | 'printSettings'
   | 'notes'
   | 'reminder'
@@ -152,6 +159,8 @@ export const ALL_FIELD_KEYS: { key: FieldKey; label: string; group: string }[] =
   { key: 'price', label: 'سعر الحجز', group: 'الحسابات المالية' },
   { key: 'depositAmount', label: 'مبلغ العربون والمدفوع', group: 'الحسابات المالية' },
   { key: 'remaining', label: 'المبلغ الباقي وحالة الدفع', group: 'الحسابات المالية' },
+  { key: 'addons', label: 'إضافات الحجز المرنة', group: 'تفاصيل الحجز' },
+  { key: 'expenses', label: 'المصاريف الداخلية وصافي الربح', group: 'الحسابات المالية' },
   { key: 'printSettings', label: 'إعدادات وحالة الطباعة', group: 'الطباعة' },
   { key: 'notes', label: 'الملاحظات الخاصة بالحجز', group: 'ملاحظات وتذكيرات' },
   { key: 'reminder', label: 'موعد التذكير', group: 'ملاحظات وتذكيرات' },

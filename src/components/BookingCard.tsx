@@ -70,6 +70,8 @@ export const BookingCard: React.FC<BookingCardProps> = ({
   const viewNotes = canViewField(currentUser, 'notes');
   const viewStaff = canViewField(currentUser, 'assignedStaff');
   const viewStatus = canViewField(currentUser, 'status');
+  const viewAddons = canViewField(currentUser, 'addons');
+  const viewExpenses = canViewField(currentUser, 'expenses');
 
   const canEditBooking = canPerformAction(currentUser, 'editBooking');
   const canDeleteBooking = canPerformAction(currentUser, 'deleteBooking');
@@ -95,6 +97,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
     if (booking.printOptions.photoCards) {
       printItemsList.push(`صور كروت (${booking.printOptions.photoCardsCount || 0} صورة)`);
     }
+    (booking.customPrintItems || []).forEach((item) => printItemsList.push(`${item.name} (${item.quantity})`));
   }
 
   return (
@@ -170,6 +173,8 @@ export const BookingCard: React.FC<BookingCardProps> = ({
         </div>
 
         {/* Financial Section - Slate-900 Dark Card from Theme */}
+        {viewAddons && booking.addons?.length > 0 && <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-3"><div className="mb-2 text-[10px] font-black text-blue-800">إضافات الحجز</div><div className="flex flex-wrap gap-1.5">{booking.addons.map(item=><span key={item.id} className="rounded-full bg-white px-2 py-1 text-[10px] font-bold text-blue-700 border border-blue-100">{item.name} × {item.quantity}</span>)}</div></div>}
+
         {viewPrice || viewDeposit || viewRemaining ? (
           <div className="bg-slate-900 text-white rounded-xl p-4 shadow-sm relative overflow-hidden border border-slate-800 space-y-3">
             <div className="absolute top-0 right-0 w-24 h-24 bg-blue-600/10 blur-2xl rounded-full pointer-events-none"></div>
@@ -220,6 +225,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
             <span>بيانات الأسعار والماليات مخفية حسب صلاحياتك</span>
           </div>
         )}
+        {viewExpenses && booking.expenses?.length > 0 && <div className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs"><div className="flex justify-between font-bold"><span className="text-rose-700">المصاريف الداخلية</span><span className="text-rose-600">{formatCurrency(booking.expenses.reduce((sum,item)=>sum+item.amount,0))}</span></div><div className="mt-2 flex justify-between border-t border-rose-100 pt-2 font-black"><span>صافي الربح المتوقع</span><span className="text-emerald-700">{formatCurrency(Math.max(0,booking.price-booking.expenses.reduce((sum,item)=>sum+item.amount,0)))}</span></div></div>}
 
         {/* Print Management Section - Emerald Theme */}
         {viewPrint && (

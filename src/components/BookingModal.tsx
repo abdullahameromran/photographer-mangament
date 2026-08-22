@@ -7,6 +7,8 @@ import {
   BookingType,
   ReminderOption,
   PrintOptions,
+  CustomLineItem,
+  ExpenseItem,
 } from "../types";
 import {
   canViewField,
@@ -31,6 +33,10 @@ import {
   Lock,
   Sparkles,
   CheckCircle2,
+  Plus,
+  Trash2,
+  ReceiptText,
+  PackagePlus,
 } from "lucide-react";
 import { storageApi } from "../lib/supabase";
 
@@ -113,6 +119,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [depositAmount, setDepositAmount] = useState<number>(3000);
   const [depositReceiptUrl, setDepositReceiptUrl] = useState("");
   const [depositReceiptFile, setDepositReceiptFile] = useState<File | null>(null);
+  const [addons, setAddons] = useState<CustomLineItem[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [depositReceiptPreview, setDepositReceiptPreview] = useState("");
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -128,6 +136,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     photoCardsCount: 0,
   });
   const [printStatus, setPrintStatus] = useState<PrintStatus>("لم تبدأ");
+  const [customPrintItems, setCustomPrintItems] = useState<CustomLineItem[]>([]);
 
   // Reminder & Assignment & Status
   const [reminder, setReminder] = useState<ReminderOption>("قبل يوم");
@@ -158,6 +167,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setDepositReceiptUrl(initialBooking.depositReceiptUrl || "");
       setDepositReceiptPreview(initialBooking.depositReceiptUrl || "");
       setDepositReceiptFile(null);
+      setAddons(initialBooking.addons || []);
+      setExpenses(initialBooking.expenses || []);
 
       setHasPrint(initialBooking.hasPrint ?? false);
       setPrintOptions(
@@ -171,6 +182,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         },
       );
       setPrintStatus(initialBooking.printStatus || "لم تبدأ");
+      setCustomPrintItems(initialBooking.customPrintItems || []);
 
       setReminder(initialBooking.reminder || "قبل يوم");
       setCustomReminderText(initialBooking.customReminderText || "");
@@ -192,6 +204,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setDepositReceiptUrl("");
       setDepositReceiptPreview("");
       setDepositReceiptFile(null);
+      setAddons([]);
+      setExpenses([]);
       setHasPrint(true);
       setPrintOptions({
         largeCanvas: true,
@@ -202,6 +216,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         photoCardsCount: 30,
       });
       setPrintStatus("لم تبدأ");
+      setCustomPrintItems([]);
       setReminder("قبل يوم");
       setAssignedUserIds([currentUser.id]);
       setStatus("مؤكد");
@@ -240,6 +255,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const canViewDeposit = canViewField(currentUser, "depositAmount");
   const canEditDeposit =
     canEditField(currentUser, "depositAmount") && !isViewOnly;
+
+  const canViewAddons = canViewField(currentUser, "addons");
+  const canEditAddons = canEditField(currentUser, "addons") && !isViewOnly;
+  const canViewExpenses = canViewField(currentUser, "expenses");
+  const canEditExpenses = canEditField(currentUser, "expenses") && !isViewOnly;
 
   const canViewPrint = canViewField(currentUser, "printSettings");
   const canEditPrint =
@@ -294,6 +314,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     }
     if (printOptions.photoCards && printOptions.photoCardsCount < 1)
       errors.push("أدخل عدداً صحيحاً لصور الكروت.");
+    if (addons.some((item) => !item.name.trim())) errors.push("اكتب اسم كل إضافة أو احذف الصف الفارغ.");
+    if (customPrintItems.some((item) => !item.name.trim())) errors.push("اكتب اسم كل منتج طباعة مخصص أو احذف الصف الفارغ.");
+    if (expenses.some((item) => !item.name.trim())) errors.push("اكتب اسم كل مصروف أو احذف الصف الفارغ.");
     if (errors.length) {
       setValidationErrors(errors);
       return;
@@ -327,8 +350,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       hasDeposit,
       depositAmount: hasDeposit ? depositAmount : 0,
       depositReceiptUrl: hasDeposit ? receiptUrl : "",
+      addons,
+      expenses,
       hasPrint,
       printOptions,
+      customPrintItems,
       printStatus,
       reminder,
       customReminderText,
@@ -585,6 +611,19 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             </div>
           </div>
 
+          {canViewAddons && (
+            <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 sm:p-5 space-y-4">
+              <div className="flex items-center justify-between gap-3 border-b border-blue-200 pb-3">
+                <div><h3 className="flex items-center gap-2 text-sm font-extrabold text-blue-950"><PackagePlus className="h-4 w-4 text-blue-600" /> إضافات الحجز المرنة</h3><p className="mt-1 text-[11px] text-blue-700/70">مثل برومو، مصور إضافي أو درون — اكتب أي اسم تريده.</p></div>
+                {canEditAddons && <button type="button" onClick={() => setAddons([...addons,{id:crypto.randomUUID(),name:'',quantity:1,unitPrice:0}])} className="shrink-0 flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-xs font-black text-white"><Plus className="h-4 w-4" /> إضافة</button>}
+              </div>
+              <div className="space-y-3">{addons.map((item,index)=><div key={item.id} className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_100px_150px_auto] items-end gap-2 rounded-xl border border-blue-100 bg-white p-3"><label className="min-w-0"><span className="mb-1 block text-[10px] font-black text-slate-600">اسم الإضافة</span><input aria-label="اسم الإضافة" disabled={!canEditAddons} value={item.name} onChange={e=>setAddons(addons.map((x,i)=>i===index?{...x,name:e.target.value}:x))} placeholder="مثال: درون أو مصور إضافي" className="w-full min-w-0 rounded-lg border border-slate-200 p-2.5 text-xs"/></label><label><span className="mb-1 block text-[10px] font-black text-slate-600">الكمية</span><input aria-label="الكمية" disabled={!canEditAddons} type="number" min="1" value={item.quantity} onChange={e=>setAddons(addons.map((x,i)=>i===index?{...x,quantity:Math.max(1,Number(e.target.value)||1)}:x))} placeholder="1" className="w-full rounded-lg border border-slate-200 p-2.5 text-xs"/></label><label><span className="mb-1 block text-[10px] font-black text-slate-600">سعر الإضافة للعميل</span><input aria-label="سعر الإضافة للعميل" disabled={!canEditAddons} type="number" min="0" value={item.unitPrice} onChange={e=>setAddons(addons.map((x,i)=>i===index?{...x,unitPrice:Math.max(0,Number(e.target.value)||0)}:x))} placeholder="مثال: 1500 جنيه" className="w-full rounded-lg border border-slate-200 p-2.5 text-xs"/></label>{canEditAddons&&<button type="button" title="حذف الإضافة" aria-label="حذف الإضافة" onClick={()=>setAddons(addons.filter((_,i)=>i!==index))} className="h-10 rounded-lg p-2 text-rose-500 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></button>}</div>)}</div>
+              {!addons.length&&<p className="rounded-xl border border-dashed border-blue-200 bg-white/60 p-4 text-center text-xs text-slate-400">لا توجد إضافات — يمكنك إنشاء أي إضافة بالاسم الذي يناسب شغلك.</p>}
+              {!!addons.length&&<div className="text-left text-xs font-black text-blue-900">قيمة الإضافات المسجلة: {formatCurrency(addons.reduce((sum,x)=>sum+x.quantity*x.unitPrice,0))}</div>}
+              <p className="text-[10px] text-slate-500">إجمالي الاتفاق المالي أدناه هو الرقم النهائي مع العميل؛ تأكد أنه يتضمن الإضافات المدفوعة.</p>
+            </div>
+          )}
+
           {/* Section 3: Financials (حسابات الحجز) */}
           {(canViewPrice || canViewDeposit) && (
             <div className="bg-slate-900 text-white p-5 rounded-xl border border-slate-800 shadow-md relative overflow-hidden space-y-4">
@@ -775,6 +814,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             </div>
           )}
 
+          {canViewExpenses && (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-4 sm:p-5 space-y-4">
+              <div className="flex items-center justify-between gap-3 border-b border-rose-200 pb-3"><div><h3 className="flex items-center gap-2 text-sm font-extrabold text-rose-950"><ReceiptText className="h-4 w-4 text-rose-600" /> المصاريف الداخلية</h3><p className="mt-1 text-[11px] text-rose-700/70">خاصة بالإدارة: مصور خارجي، طباعة، مواصلات أو أي تكلفة أخرى.</p></div>{canEditExpenses&&<button type="button" onClick={()=>setExpenses([...expenses,{id:crypto.randomUUID(),name:'',amount:0}])} className="shrink-0 flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-2 text-xs font-black text-white"><Plus className="h-4 w-4" /> مصروف</button>}</div>
+              <div className="space-y-2">{expenses.map((item,index)=><div key={item.id} className="grid grid-cols-[1fr_120px_auto] gap-2 rounded-xl border border-rose-100 bg-white p-2"><input disabled={!canEditExpenses} value={item.name} onChange={e=>setExpenses(expenses.map((x,i)=>i===index?{...x,name:e.target.value}:x))} placeholder="اسم المصروف" className="min-w-0 rounded-lg border border-slate-200 p-2 text-xs"/><input disabled={!canEditExpenses} type="number" min="0" value={item.amount} onChange={e=>setExpenses(expenses.map((x,i)=>i===index?{...x,amount:Math.max(0,Number(e.target.value)||0)}:x))} placeholder="المبلغ" className="rounded-lg border border-slate-200 p-2 text-xs"/>{canEditExpenses&&<button type="button" onClick={()=>setExpenses(expenses.filter((_,i)=>i!==index))} className="rounded-lg p-2 text-rose-500 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></button>}</div>)}</div>
+              <div className="grid grid-cols-2 gap-2"><div className="rounded-xl bg-white p-3"><small className="text-slate-400">إجمالي المصروفات</small><b className="block text-rose-600">{formatCurrency(expenses.reduce((sum,x)=>sum+x.amount,0))}</b></div><div className="rounded-xl bg-slate-900 p-3 text-white"><small className="text-slate-400">صافي الربح المتوقع</small><b className="block text-emerald-400">{formatCurrency(Math.max(0,price-expenses.reduce((sum,x)=>sum+x.amount,0)))}</b></div></div>
+            </div>
+          )}
+
           {/* Section 4: Print Management (إدارة الطباعة) */}
           {canViewPrint && (
             <div className="bg-indigo-50/70 p-4 sm:p-5 rounded-2xl border border-indigo-200 space-y-4">
@@ -936,6 +983,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       />
                     </div>
                   )}
+
+                  <div className="border-t border-indigo-100 pt-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3"><div><b className="block text-xs text-indigo-950">منتجات وتسليمات مخصصة</b><span className="text-[10px] text-slate-500">مثال: 30×80، بوكس خشب، ألبوم بمقاس خاص.</span></div>{canEditPrint&&<button type="button" onClick={()=>setCustomPrintItems([...customPrintItems,{id:crypto.randomUUID(),name:'',quantity:1,unitPrice:0}])} className="flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white"><Plus className="h-4 w-4" /> منتج</button>}</div>
+                    {customPrintItems.map((item,index)=><div key={item.id} className="grid grid-cols-[1fr_72px_100px_auto] gap-2"><input disabled={!canEditPrint} value={item.name} onChange={e=>setCustomPrintItems(customPrintItems.map((x,i)=>i===index?{...x,name:e.target.value}:x))} placeholder="اسم أو مقاس المنتج" className="min-w-0 rounded-lg border border-indigo-200 p-2 text-xs"/><input disabled={!canEditPrint} type="number" min="1" value={item.quantity} onChange={e=>setCustomPrintItems(customPrintItems.map((x,i)=>i===index?{...x,quantity:Math.max(1,Number(e.target.value)||1)}:x))} className="rounded-lg border border-indigo-200 p-2 text-xs"/><input disabled={!canEditPrint} type="number" min="0" value={item.unitPrice} onChange={e=>setCustomPrintItems(customPrintItems.map((x,i)=>i===index?{...x,unitPrice:Math.max(0,Number(e.target.value)||0)}:x))} placeholder="التكلفة" className="rounded-lg border border-indigo-200 p-2 text-xs"/>{canEditPrint&&<button type="button" onClick={()=>setCustomPrintItems(customPrintItems.filter((_,i)=>i!==index))} className="rounded-lg p-2 text-rose-500 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></button>}</div>)}
+                  </div>
 
                 </div>
               )}
